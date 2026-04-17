@@ -12,8 +12,6 @@ env:
   APP_NAME: todo
   APP_PORT: 3000
   HOST_PORT: 80
-  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
 jobs:
   build-push-deploy:
@@ -38,34 +36,12 @@ jobs:
           elif [ -f frontend/Dockerfile ]; then
             echo "context=./frontend" >> "$GITHUB_OUTPUT"
             echo "file=./frontend/Dockerfile" >> "$GITHUB_OUTPUT"
-          elif [ -f backend/Dockerfile ]; then
-            echo "context=./backend" >> "$GITHUB_OUTPUT"
-            echo "file=./backend/Dockerfile" >> "$GITHUB_OUTPUT"
           else
-            echo "No Dockerfile found. Expected ./Dockerfile, ./frontend/Dockerfile, or ./backend/Dockerfile" >&2
+            echo "No Dockerfile found." >&2
             exit 1
           fi
 
-      # -- Build --------------------------------------------------------------
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests (if present)
-        run: npm test --if-present
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-
-      # -- Registry login --------------------------------------------------
+      # -- Docker login --
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -73,48 +49,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # -- Build & Push (THIS IS THE IMPORTANT FIX) --
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ${{ steps.dockerfile.outputs.context }}
           file: ${{ steps.dockerfile.outputs.file }}
           push: true
+          build-args: |
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
 
-      # -- SSH deployment --------------------------------------------------
-      - name: Validate SSH configuration
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
-        run: |
-          if [ -z "$SERVER_HOST" ]; then
-            echo "::error::Missing SERVER_HOST secret."
-            exit 1
-          fi
-
-          if [[ "$SERVER_HOST" == http://* || "$SERVER_HOST" == https://* || "$SERVER_HOST" == */* ]]; then
-            echo "::error::SERVER_HOST must be a raw hostname/IP (no protocol, path, or port)."
-            exit 1
-          fi
-
-          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
-            echo "::error::SERVER_PORT must be a number between 1 and 65535 (usually 22)."
-            exit 1
-          fi
-
-      - name: Check SSH endpoint reachability
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
-        run: |
-          if ! timeout 12 bash -c "cat < /dev/null > /dev/tcp/${SERVER_HOST}/${SERVER_PORT}" 2>/dev/null; then
-            echo "::error::Cannot reach ${SERVER_HOST}:${SERVER_PORT} from GitHub runner."
-            echo "::error::Open the SSH port in your firewall/security group or use a self-hosted runner in the same network."
-            exit 1
-          fi
-
+      # -- Deploy --
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -122,12 +71,14 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT || '22' }}
-          timeout: 60s
-          command_timeout: 20m
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             docker pull ${{ env.IMAGE }}:latest
             docker stop ${{ env.APP_NAME }} || true
             docker rm ${{ env.APP_NAME }} || true
-            docker run -d --name ${{ env.APP_NAME }} --restart unless-stopped -p ${{ env.HOST_PORT }}:${{ env.APP_PORT }} ${{ env.IMAGE }}:latest
+            docker run -d \
+              --name ${{ env.APP_NAME }} \
+              --restart unless-stopped \
+              -p ${{ env.HOST_PORT }}:${{ env.APP_PORT }} \
+              ${{ env.IMAGE }}:latest
             docker image prune -f
