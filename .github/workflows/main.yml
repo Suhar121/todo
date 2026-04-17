@@ -1,0 +1,51 @@
+name: React CI/CD (Vercel)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          elif [ -f frontend/package.json ]; then
+            cd frontend
+            npm install
+          else
+            echo "No package.json found at root or frontend/package.json"
+            exit 1
+          fi
+
+      - name: Build project
+        run: |
+          if [ -f package.json ]; then
+            npm run build
+          elif [ -f frontend/package.json ]; then
+            cd frontend
+            npm run build
+          else
+            echo "No package.json found at root or frontend/package.json"
+            exit 1
+          fi
+
+      - name: Deploy to Vercel (placeholder)
+        run: echo "Add your Vercel deploy command or action here."
