@@ -16,6 +16,7 @@ export interface AppUser {
   email: string;
   displayName: string;
   photoURL?: string;
+  workType?: string;
 }
 
 export interface Project {

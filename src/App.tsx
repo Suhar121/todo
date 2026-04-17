@@ -6,33 +6,50 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Task, Project, Note, Priority, AppUser, Habit, AchievementProgress } from './types';
 import {
-  loadTasks, saveTasks,
-  loadProjects, saveProjects,
-  loadNotes, saveNotes,
-  loadHabits, saveHabits,
-  loadAchievements, saveAchievements,
+  loadTasks, insertTask, updateTaskDb, deleteTaskDb,
+  loadProjects, insertProject, updateProjectDb, deleteProjectDb,
+  loadNotes, insertNote, updateNoteDb, deleteNoteDb,
+  loadHabits, insertHabit, updateHabitDates, deleteHabitDb,
+  loadAchievements, upsertAchievements,
   generateId,
 } from './lib/storage';
+import { supabase } from './lib/supabase';
 import { ACHIEVEMENTS } from './lib/achievements';
 import { Sidebar } from './components/Sidebar';
 import { TaskBoard } from './components/TaskBoard';
 import { HabitTracker } from './components/HabitTracker';
 import { UniversalInput } from './components/UniversalInput';
 import { ToastContainer, ToastItem, ToastType } from './components/Toast';
-import { motion } from 'motion/react';
-import { LogIn, User as UserIcon, Sun, Moon, Menu, Layout } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LogIn, UserPlus, User as UserIcon, Sun, Moon, Menu, Layout, Eye, EyeOff, Briefcase } from 'lucide-react';
 import { getGreeting } from './lib/utils';
 
-const SIMPLE_LOGIN_USERNAME = 'suhar';
-const SIMPLE_LOGIN_PASSWORD = 'suharshr@9906';
-const SIMPLE_LOGIN_STORAGE_KEY = 'focusflow-local-user';
+const WORK_TYPES = [
+  { value: 'student', label: 'Student', emoji: '📚' },
+  { value: 'developer', label: 'Developer', emoji: '💻' },
+  { value: 'designer', label: 'Designer', emoji: '🎨' },
+  { value: 'entrepreneur', label: 'Entrepreneur', emoji: '🚀' },
+  { value: 'freelancer', label: 'Freelancer', emoji: '✨' },
+  { value: 'manager', label: 'Manager', emoji: '📊' },
+  { value: 'creator', label: 'Content Creator', emoji: '🎬' },
+  { value: 'marketer', label: 'Marketer', emoji: '📢' },
+  { value: 'researcher', label: 'Researcher', emoji: '🔬' },
+  { value: 'other', label: 'Other', emoji: '🌍' },
+];
 
 export default function App() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [usernameInput, setUsernameInput] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Form fields
+  const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [workTypeInput, setWorkTypeInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Data state
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -48,11 +65,12 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // ===========================
-  // TOAST SYSTEM
+  // TOASTS
   // ===========================
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = generateId();
     setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   }, []);
 
   const dismissToast = useCallback((id: string) => {
@@ -78,28 +96,54 @@ export default function App() {
   };
 
   // ===========================
-  // AUTH
+  // AUTH (Supabase)
   // ===========================
   useEffect(() => {
-    const savedUser = localStorage.getItem(SIMPLE_LOGIN_STORAGE_KEY);
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser) as AppUser);
-      } catch {
-        localStorage.removeItem(SIMPLE_LOGIN_STORAGE_KEY);
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          const u = session.user;
+          const meta = u.user_metadata || {};
+          setUser({
+            uid: u.id,
+            username: meta.display_name || u.email?.split('@')[0] || 'User',
+            email: u.email || '',
+            displayName: meta.display_name || u.email?.split('@')[0] || 'User',
+            photoURL: meta.avatar_url,
+            workType: meta.work_type,
+          });
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    );
+
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user;
+        const meta = u.user_metadata || {};
+        setUser({
+          uid: u.id,
+          username: meta.display_name || u.email?.split('@')[0] || 'User',
+          email: u.email || '',
+          displayName: meta.display_name || u.email?.split('@')[0] || 'User',
+          photoURL: meta.avatar_url,
+          workType: meta.work_type,
+        });
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Load data on login
+  // Load data when user logs in
   useEffect(() => {
     if (user) {
-      setTasks(loadTasks());
-      setProjects(loadProjects());
-      setNotes(loadNotes());
-      setHabits(loadHabits());
-      setAchievements(loadAchievements());
+      loadAllData();
     } else {
       setTasks([]);
       setProjects([]);
@@ -109,12 +153,26 @@ export default function App() {
     }
   }, [user]);
 
+  const loadAllData = async () => {
+    const [t, p, n, h, a] = await Promise.all([
+      loadTasks(),
+      loadProjects(),
+      loadNotes(),
+      loadHabits(),
+      loadAchievements(),
+    ]);
+    setTasks(t);
+    setProjects(p);
+    setNotes(n);
+    setHabits(h);
+    setAchievements(a);
+  };
+
   // ===========================
   // KEYBOARD SHORTCUTS
   // ===========================
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Ctrl+K / Cmd+K to focus universal input
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         document.getElementById('universal-input')?.focus();
@@ -127,7 +185,7 @@ export default function App() {
   // ===========================
   // TASK CRUD
   // ===========================
-  const addTask = useCallback((data: {
+  const addTask = useCallback(async (data: {
     title: string;
     priority?: Priority;
     dueDate?: string;
@@ -135,205 +193,169 @@ export default function App() {
     description?: string;
     tags?: string[];
   }) => {
+    if (!user) return;
     const task: Task = {
-      id: generateId(),
+      id: generateId(), // Temp ID, Supabase will assign real one
       title: data.title,
       description: data.description || '',
       dueDate: data.dueDate,
       priority: data.priority || 'medium',
       status: 'todo',
       projectId: data.projectId,
-      userId: user!.uid,
+      userId: user.uid,
       tags: data.tags || [],
       subtasks: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setTasks(prev => {
-      const updated = [task, ...prev];
-      saveTasks(updated);
-      return updated;
-    });
-    showToast('Task created', 'success');
-    setTimeout(() => evaluateAchievements(), 100);
+
+    const inserted = await insertTask(task);
+    if (inserted) {
+      setTasks(prev => [inserted, ...prev]);
+      showToast('Task created', 'success');
+      setTimeout(() => evaluateAchievements(), 200);
+    } else {
+      showToast('Failed to create task', 'error');
+    }
   }, [user, showToast]);
 
-  const updateTask = useCallback((id: string, data: Partial<Task>) => {
-    setTasks(prev => {
-      const updated = prev.map(t =>
-        t.id === id ? { ...t, ...data, updatedAt: new Date().toISOString() } : t
-      );
-      saveTasks(updated);
-      return updated;
-    });
-    // Evaluate achievements when task status changes
+  const updateTask = useCallback(async (id: string, data: Partial<Task>) => {
+    setTasks(prev => prev.map(t =>
+      t.id === id ? { ...t, ...data, updatedAt: new Date().toISOString() } : t
+    ));
+    await updateTaskDb(id, data);
     if (data.status) {
-      setTimeout(() => evaluateAchievements(), 100);
+      setTimeout(() => evaluateAchievements(), 200);
     }
   }, []);
 
-  const deleteTask = useCallback((id: string) => {
-    setTasks(prev => {
-      const updated = prev.filter(t => t.id !== id);
-      saveTasks(updated);
-      return updated;
-    });
+  const deleteTask = useCallback(async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    await deleteTaskDb(id);
     showToast('Task deleted', 'info');
   }, [showToast]);
 
   // ===========================
   // PROJECT CRUD
   // ===========================
-  const addProject = useCallback((name: string) => {
+  const addProject = useCallback(async (name: string) => {
+    if (!user) return;
     const project: Project = {
       id: generateId(),
       name,
       color: `hsl(${Math.floor(Math.random() * 360)}, 65%, 55%)`,
-      userId: user!.uid,
+      userId: user.uid,
       createdAt: new Date().toISOString(),
     };
-    setProjects(prev => {
-      const updated = [...prev, project];
-      saveProjects(updated);
-      return updated;
-    });
-    showToast(`Project "${name}" created`, 'success');
-    setTimeout(() => evaluateAchievements(), 100);
+
+    const inserted = await insertProject(project);
+    if (inserted) {
+      setProjects(prev => [...prev, inserted]);
+      showToast(`Project "${name}" created`, 'success');
+      setTimeout(() => evaluateAchievements(), 200);
+    }
   }, [user, showToast]);
 
-  const updateProject = useCallback((id: string, data: Partial<Project>) => {
-    setProjects(prev => {
-      const updated = prev.map(p => p.id === id ? { ...p, ...data } : p);
-      saveProjects(updated);
-      return updated;
-    });
+  const updateProject = useCallback(async (id: string, data: Partial<Project>) => {
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+    await updateProjectDb(id, data);
   }, []);
 
-  const deleteProject = useCallback((id: string) => {
-    const projectName = projects.find(p => p.id === id)?.name;
-    // Remove projectId from tasks in this project
-    setTasks(prev => {
-      const updated = prev.map(t =>
-        t.projectId === id ? { ...t, projectId: undefined } : t
-      );
-      saveTasks(updated);
-      return updated;
-    });
-    setProjects(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      saveProjects(updated);
-      return updated;
-    });
-    if (activeView === `project-${id}`) {
-      setActiveView('inbox');
-    }
-    showToast(`Project "${projectName}" deleted`, 'info');
-  }, [showToast, activeView, projects]);
+  const deleteProject = useCallback(async (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    await deleteProjectDb(id);
+    showToast('Project deleted', 'info');
+  }, [showToast]);
 
   // ===========================
   // NOTE CRUD
   // ===========================
-  const addNote = useCallback((content: string) => {
+  const addNote = useCallback(async (content: string) => {
+    if (!user) return;
     const note: Note = {
       id: generateId(),
       content,
-      userId: user!.uid,
+      userId: user.uid,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setNotes(prev => {
-      const updated = [note, ...prev];
-      saveNotes(updated);
-      return updated;
-    });
-    showToast('Note saved', 'success');
+
+    const inserted = await insertNote(note);
+    if (inserted) {
+      setNotes(prev => [inserted, ...prev]);
+      showToast('Note saved', 'success');
+    }
   }, [user, showToast]);
 
-  const updateNote = useCallback((id: string, content: string) => {
-    setNotes(prev => {
-      const updated = prev.map(n =>
-        n.id === id ? { ...n, content, updatedAt: new Date().toISOString() } : n
-      );
-      saveNotes(updated);
-      return updated;
-    });
+  const updateNote = useCallback(async (id: string, content: string) => {
+    setNotes(prev => prev.map(n =>
+      n.id === id ? { ...n, content, updatedAt: new Date().toISOString() } : n
+    ));
+    await updateNoteDb(id, content);
   }, []);
 
-  const deleteNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const updated = prev.filter(n => n.id !== id);
-      saveNotes(updated);
-      return updated;
-    });
+  const deleteNote = useCallback(async (id: string) => {
+    setNotes(prev => prev.filter(n => n.id !== id));
+    await deleteNoteDb(id);
     showToast('Note deleted', 'info');
   }, [showToast]);
 
   // ===========================
   // HABIT CRUD
   // ===========================
-  const addHabit = useCallback((name: string, emoji: string, color: string) => {
+  const addHabit = useCallback(async (name: string, emoji: string, color: string) => {
+    if (!user) return;
     const habit: Habit = {
       id: generateId(),
       name,
       emoji,
       color,
-      userId: user!.uid,
+      userId: user.uid,
       completedDates: [],
       createdAt: new Date().toISOString(),
     };
-    setHabits(prev => {
-      const updated = [habit, ...prev];
-      saveHabits(updated);
-      return updated;
-    });
-    showToast(`Habit "${name}" created`, 'success');
-    // Check achievements
-    setTimeout(() => evaluateAchievements(), 100);
+
+    const inserted = await insertHabit(habit);
+    if (inserted) {
+      setHabits(prev => [inserted, ...prev]);
+      showToast(`Habit "${name}" created`, 'success');
+      setTimeout(() => evaluateAchievements(), 200);
+    }
   }, [user, showToast]);
 
-  const deleteHabit = useCallback((id: string) => {
-    setHabits(prev => {
-      const updated = prev.filter(h => h.id !== id);
-      saveHabits(updated);
-      return updated;
-    });
+  const deleteHabit = useCallback(async (id: string) => {
+    setHabits(prev => prev.filter(h => h.id !== id));
+    await deleteHabitDb(id);
     showToast('Habit deleted', 'info');
   }, [showToast]);
 
-  const toggleHabitDay = useCallback((habitId: string, dateStr: string) => {
-    setHabits(prev => {
-      const updated = prev.map(h => {
-        if (h.id !== habitId) return h;
-        const has = h.completedDates.includes(dateStr);
-        return {
-          ...h,
-          completedDates: has
-            ? h.completedDates.filter(d => d !== dateStr)
-            : [...h.completedDates, dateStr],
-        };
-      });
-      saveHabits(updated);
-      return updated;
-    });
-    // Evaluate achievements after state updates
-    setTimeout(() => evaluateAchievements(), 100);
+  const toggleHabitDay = useCallback(async (habitId: string, dateStr: string) => {
+    let newDates: string[] = [];
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
+      const has = h.completedDates.includes(dateStr);
+      newDates = has
+        ? h.completedDates.filter(d => d !== dateStr)
+        : [...h.completedDates, dateStr];
+      return { ...h, completedDates: newDates };
+    }));
+    await updateHabitDates(habitId, newDates);
+    setTimeout(() => evaluateAchievements(), 200);
   }, []);
 
   // ===========================
   // ACHIEVEMENT EVALUATION
   // ===========================
-  const evaluateAchievements = useCallback(() => {
-    // Read latest data from localStorage for accuracy
-    const latestTasks = loadTasks();
-    const latestHabits = loadHabits();
-    const latestProjects = loadProjects();
-    const latestNotes = loadNotes();
-    const currentAchievements = loadAchievements();
+  const evaluateAchievements = useCallback(async () => {
+    if (!user) return;
+
+    const [latestTasks, latestHabits, latestProjects, latestNotes, currentAchievements] = await Promise.all([
+      loadTasks(), loadHabits(), loadProjects(), loadNotes(), loadAchievements(),
+    ]);
 
     const completedTaskCount = latestTasks.filter(t => t.status === 'completed').length;
     const habitCount = latestHabits.length;
 
-    // Calculate max streak across all habits
     const getStreakForHabit = (dates: string[]) => {
       const sorted = [...new Set(dates)].sort().reverse();
       if (sorted.length === 0) return 0;
@@ -351,12 +373,9 @@ export default function App() {
     };
 
     const maxStreak = Math.max(0, ...latestHabits.map(h => getStreakForHabit(h.completedDates)));
-
-    // Check if all habits checked in today
     const today = new Date().toISOString().split('T')[0];
     const allCheckedToday = latestHabits.length > 0 && latestHabits.every(h => h.completedDates.includes(today));
 
-    // Progress map
     const progressMap: Record<string, number> = {
       first_task: completedTaskCount,
       five_tasks: completedTaskCount,
@@ -392,41 +411,83 @@ export default function App() {
     });
 
     if (changed) {
-      saveAchievements(updated);
+      await upsertAchievements(updated, user.uid);
       setAchievements(updated);
     }
-  }, []);
+  }, [user]);
 
   // ===========================
-  // LOGIN
+  // AUTH HANDLERS
   // ===========================
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginError(null);
+    setAuthError(null);
+    setAuthLoading(true);
 
-    if (usernameInput.trim() !== SIMPLE_LOGIN_USERNAME || passwordInput !== SIMPLE_LOGIN_PASSWORD) {
-      setLoginError('Invalid username or password.');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: emailInput.trim(),
+      password: passwordInput,
+    });
+
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthError(error.message);
       return;
     }
 
-    const localUser: AppUser = {
-      uid: SIMPLE_LOGIN_USERNAME,
-      username: SIMPLE_LOGIN_USERNAME,
-      email: `${SIMPLE_LOGIN_USERNAME}@local.focusflow`,
-      displayName: 'Suhar',
-      photoURL: undefined,
-    };
-
-    setUser(localUser);
-    localStorage.setItem(SIMPLE_LOGIN_STORAGE_KEY, JSON.stringify(localUser));
-    setUsernameInput('');
+    setEmailInput('');
     setPasswordInput('');
   };
 
-  const handleLogout = () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+
+    if (!displayNameInput.trim()) {
+      setAuthError('Please enter your name.');
+      return;
+    }
+    if (!workTypeInput) {
+      setAuthError('Please select what you do.');
+      return;
+    }
+    if (passwordInput.length < 6) {
+      setAuthError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setAuthLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email: emailInput.trim(),
+      password: passwordInput,
+      options: {
+        data: {
+          display_name: displayNameInput.trim(),
+          work_type: workTypeInput,
+        },
+      },
+    });
+
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    setEmailInput('');
+    setPasswordInput('');
+    setDisplayNameInput('');
+    setWorkTypeInput('');
+    showToast('Account created! Welcome to FocusFlow 🎉', 'success');
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setActiveView('inbox');
-    localStorage.removeItem(SIMPLE_LOGIN_STORAGE_KEY);
   };
 
   // ===========================
@@ -446,16 +507,16 @@ export default function App() {
   }
 
   // ===========================
-  // RENDER: LOGIN
+  // RENDER: AUTH (Login / Register)
   // ===========================
   if (!user) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-sm w-full text-center space-y-8"
+          className="max-w-sm w-full text-center space-y-6"
         >
           {/* Logo */}
           <div className="space-y-3">
@@ -466,54 +527,152 @@ export default function App() {
               FocusFlow
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
-              AI-powered productivity. Tasks, ideas, and focused work — all in one place.
+              {authMode === 'login'
+                ? 'Welcome back. Sign in to continue.'
+                : 'Create your account and start being productive.'
+              }
             </p>
           </div>
 
-          {/* Login form */}
-          <form onSubmit={handleLogin} className="space-y-3">
+          {/* Auth tabs */}
+          <div className="flex bg-zinc-100 dark:bg-zinc-900 rounded-xl p-1">
+            <button
+              onClick={() => { setAuthMode('login'); setAuthError(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authMode === 'login'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => { setAuthMode('register'); setAuthError(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authMode === 'register'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-3">
+            <AnimatePresence mode="wait">
+              {authMode === 'register' && (
+                <motion.div
+                  key="register-fields"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3 overflow-hidden"
+                >
+                  {/* Display Name */}
+                  <input
+                    type="text"
+                    value={displayNameInput}
+                    onChange={e => setDisplayNameInput(e.target.value)}
+                    placeholder="Full Name"
+                    autoComplete="name"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/40 text-sm transition-shadow"
+                  />
+
+                  {/* Work Type */}
+                  <div className="text-left">
+                    <div className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
+                      <Briefcase size={10} />
+                      What do you do?
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {WORK_TYPES.map(wt => (
+                        <button
+                          key={wt.value}
+                          type="button"
+                          onClick={() => setWorkTypeInput(wt.value)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${workTypeInput === wt.value
+                            ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-400/30'
+                            : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                            }`}
+                        >
+                          <span>{wt.emoji}</span>
+                          <span>{wt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Email */}
             <input
-              type="text"
-              value={usernameInput}
-              onChange={(e) => setUsernameInput(e.target.value)}
-              placeholder="Username"
-              autoComplete="username"
+              type="email"
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              placeholder="Email"
+              autoComplete="email"
               className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/40 text-sm transition-shadow"
             />
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="Password"
-              autoComplete="current-password"
-              className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/40 text-sm transition-shadow"
-            />
+
+            {/* Password with visibility toggle */}
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={passwordInput}
+                onChange={e => setPasswordInput(e.target.value)}
+                placeholder={authMode === 'register' ? 'Password (min 6 characters)' : 'Password'}
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                className="w-full px-4 py-3 pr-11 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/40 text-sm transition-shadow"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {/* Submit button */}
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-lg shadow-indigo-500/20"
+              disabled={authLoading}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity shadow-lg shadow-indigo-500/20 disabled:opacity-50"
             >
-              <LogIn size={18} />
-              Sign in
+              {authLoading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : authMode === 'login' ? (
+                <>
+                  <LogIn size={18} />
+                  Sign In
+                </>
+              ) : (
+                <>
+                  <UserPlus size={18} />
+                  Create Account
+                </>
+              )}
             </button>
           </form>
 
-          {loginError && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-rose-600 dark:text-rose-400 font-medium"
-            >
-              {loginError}
-            </motion.p>
-          )}
-
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-            Demo: <span className="font-mono font-bold text-zinc-500 dark:text-zinc-400">suhar</span> / <span className="font-mono font-bold text-zinc-500 dark:text-zinc-400">suharshr@9906</span>
-          </p>
+          {/* Error */}
+          <AnimatePresence>
+            {authError && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-sm text-rose-600 dark:text-rose-400 font-medium"
+              >
+                {authError}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
           {/* Feature pills */}
-          <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
-            {['Tasks', 'Ideas', 'AI Capture', 'Projects'].map(item => (
+          <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+            {['Tasks', 'Habits', 'AI Capture', 'Streaks', 'Projects'].map(item => (
               <span
                 key={item}
                 className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900"
@@ -523,6 +682,9 @@ export default function App() {
             ))}
           </div>
         </motion.div>
+
+        {/* Toast notifications (visible during auth) */}
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </div>
     );
   }
