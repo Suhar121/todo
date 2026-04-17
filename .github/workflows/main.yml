@@ -27,6 +27,23 @@ jobs:
           APP_LC="${APP_NAME,,}"
           echo "IMAGE=ghcr.io/${OWNER_LC}/${APP_LC}" >> "$GITHUB_ENV"
 
+      - name: Resolve Docker build context
+        id: dockerfile
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "context=." >> "$GITHUB_OUTPUT"
+            echo "file=./Dockerfile" >> "$GITHUB_OUTPUT"
+          elif [ -f frontend/Dockerfile ]; then
+            echo "context=./frontend" >> "$GITHUB_OUTPUT"
+            echo "file=./frontend/Dockerfile" >> "$GITHUB_OUTPUT"
+          elif [ -f backend/Dockerfile ]; then
+            echo "context=./backend" >> "$GITHUB_OUTPUT"
+            echo "file=./backend/Dockerfile" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Dockerfile found. Expected ./Dockerfile, ./frontend/Dockerfile, or ./backend/Dockerfile" >&2
+            exit 1
+          fi
+
       # -- Build --------------------------------------------------------------
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -54,7 +71,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ steps.dockerfile.outputs.context }}
+          file: ${{ steps.dockerfile.outputs.file }}
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
