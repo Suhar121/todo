@@ -12,6 +12,8 @@ env:
   APP_NAME: todo
   APP_PORT: 3000
   HOST_PORT: 80
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
 jobs:
   build-push-deploy:
@@ -59,6 +61,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       # -- Registry login --------------------------------------------------
       - name: Log in to GitHub Container Registry
