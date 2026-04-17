@@ -79,13 +79,46 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
 
       # -- SSH deployment --------------------------------------------------
+      - name: Validate SSH configuration
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          if [ -z "$SERVER_HOST" ]; then
+            echo "::error::Missing SERVER_HOST secret."
+            exit 1
+          fi
+
+          if [[ "$SERVER_HOST" == http://* || "$SERVER_HOST" == https://* || "$SERVER_HOST" == */* ]]; then
+            echo "::error::SERVER_HOST must be a raw hostname/IP (no protocol, path, or port)."
+            exit 1
+          fi
+
+          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
+            echo "::error::SERVER_PORT must be a number between 1 and 65535 (usually 22)."
+            exit 1
+          fi
+
+      - name: Check SSH endpoint reachability
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          if ! timeout 12 bash -c "cat < /dev/null > /dev/tcp/${SERVER_HOST}/${SERVER_PORT}" 2>/dev/null; then
+            echo "::error::Cannot reach ${SERVER_HOST}:${SERVER_PORT} from GitHub runner."
+            echo "::error::Open the SSH port in your firewall/security group or use a self-hosted runner in the same network."
+            exit 1
+          fi
+
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          timeout: 60s
+          command_timeout: 20m
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             docker pull ${{ env.IMAGE }}:latest
