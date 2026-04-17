@@ -1,14 +1,40 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIParsedTask } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+let ai: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI | null {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
+  const isPlaceholderKey = apiKey === 'YOUR_GEMINI_API_KEY_HERE' || apiKey === 'MY_GEMINI_API_KEY';
+
+  if (!apiKey || isPlaceholderKey) {
+    return null;
+  }
+
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey });
+  }
+
+  return ai;
+}
 
 export async function parseUniversalInput(input: string): Promise<AIParsedTask> {
   const currentDate = new Date().toISOString().split('T')[0];
   const currentTime = new Date().toLocaleTimeString();
+  const client = getGeminiClient();
+
+  if (!client) {
+    console.warn("Gemini API key is missing. Falling back to basic parsing.");
+    return {
+      title: input,
+      isTask: true,
+      priority: 'medium',
+      tags: []
+    };
+  }
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Parse this productivity input: "${input}". 
       Current Date: ${currentDate}
