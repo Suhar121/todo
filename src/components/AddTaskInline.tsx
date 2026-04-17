@@ -54,22 +54,24 @@ export const AddTaskInline: React.FC<AddTaskInlineProps> = ({ onAdd, projects, d
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 mb-3 text-sm text-zinc-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700/60 transition-all group"
+        className="group relative flex w-full items-center pl-2 pr-4 py-2 sm:py-2.5 border border-zinc-200 dark:border-[#262626]/40 bg-white dark:bg-[#1c1c1c] rounded-[18px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-none hover:dark:bg-[#222] transition-all duration-300"
       >
-        <span className="w-5 h-5 rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center group-hover:border-indigo-400 dark:group-hover:border-indigo-600 transition-colors">
-          <Plus size={12} className="group-hover:rotate-90 transition-transform duration-200" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-indigo-50 dark:bg-white transition-colors duration-300 shadow-sm group-hover:scale-105">
+          <Plus size={22} strokeWidth={2.5} className="text-indigo-600 dark:text-zinc-900" />
+        </div>
+        <span className="ml-4 text-[15px] font-semibold text-zinc-600 dark:text-[#d4d4d4]">Add new task</span>
+        <span className="ml-auto uppercase text-[10px] sm:text-xs font-bold tracking-widest text-zinc-400 dark:text-[#555]">
+          QUICK ADD
         </span>
-        <span className="font-medium">Add task</span>
-        <span className="ml-auto text-[10px] text-zinc-300 dark:text-zinc-700 font-mono">Enter ↵</span>
       </button>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-3 border border-indigo-200 dark:border-indigo-900/40 rounded-xl bg-white dark:bg-zinc-900 shadow-sm shadow-indigo-500/5 overflow-hidden"
+      initial={{ opacity: 0, y: 15, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="w-full sm:rounded-2xl border-t sm:border border-indigo-200/80 dark:border-[#262626] bg-white dark:bg-[#131313] shadow-2xl dark:shadow-[0_-20px_60px_rgba(0,0,0,0.6)] overflow-hidden"
     >
       <div className="p-4 space-y-3">
         <input

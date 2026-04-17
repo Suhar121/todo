@@ -16,6 +16,7 @@ import {
   Tag,
   Pencil,
   X,
+  Star,
 } from 'lucide-react';
 import { cn, formatRelativeDate, isOverdue } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -105,7 +106,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-8 h-full overflow-y-auto custom-scrollbar"
+        className="p-4 sm:p-8 h-full overflow-y-auto custom-scrollbar"
       >
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-text-main dark:text-zinc-50 tracking-tight">Ideas & Notes</h1>
@@ -199,30 +200,16 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
   return (
     <div className="flex-1 grid grid-cols-1 xl:grid-cols-[1fr_320px] h-full overflow-hidden">
       {/* Main task area */}
-      <section className="p-8 overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-text-main dark:text-zinc-50 tracking-tight">{viewTitle}</h1>
-            <div className="text-[13px] text-text-muted dark:text-zinc-500 font-medium mt-0.5">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </div>
-          </div>
-          <div className="text-sm text-text-muted dark:text-zinc-500 font-semibold tabular-nums">
-            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+      <section className="p-4 sm:p-8 overflow-y-auto custom-scrollbar flex flex-col h-full relative">
+        <div className="mb-0 shrink-0">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-1">{viewTitle}</h1>
+          <div className="text-[15px] md:text-base text-zinc-500 dark:text-[#a0a0a0] font-medium tracking-wide">
+            You have {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} to curate.
           </div>
         </div>
 
-        {/* Inline Add Task */}
-        {view !== 'completed' && (
-          <AddTaskInline
-            onAdd={onAddTask}
-            projects={projects}
-            defaultProjectId={defaultProjectId}
-          />
-        )}
-
         {/* Task List */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 shrink-0">
           {filteredTasks.length === 0 && (
             <div className="py-24 text-center">
               <div className="text-4xl mb-3">{view === 'completed' ? '🎉' : '✨'}</div>
@@ -235,18 +222,37 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
             </div>
           )}
           <AnimatePresence mode="popLayout">
-            {filteredTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                projects={projects}
-                onToggle={() => toggleTaskStatus(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-                onClick={() => setSelectedTaskId(task.id)}
-              />
-            ))}
+            {filteredTasks.map((task, index) => {
+              const isFeatured = view !== 'completed' && task.tags?.includes('featured');
+              
+              return (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  projects={projects}
+                  isFeatured={isFeatured}
+                  onToggle={() => toggleTaskStatus(task)}
+                  onDelete={() => handleDeleteTask(task.id)}
+                  onUpdate={(updates) => onUpdateTask(task.id, updates)}
+                  onClick={() => setSelectedTaskId(task.id)}
+                />
+              );
+            })}
           </AnimatePresence>
         </div>
+
+        {/* Floating Add Task Center Bottom */}
+        {view !== 'completed' && (
+          <div className="mt-auto pt-10 pb-0 shrink-0 w-full z-10 sticky bottom-0 pointer-events-none -mx-4 px-4 sm:px-0 sm:mx-0">
+            <div className="pointer-events-auto w-full mx-auto max-w-none sm:max-w-2xl -mb-4 sm:mb-0">
+              <AddTaskInline
+                onAdd={onAddTask}
+                projects={projects}
+                defaultProjectId={defaultProjectId}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Sidebar: Capture & Notes */}
@@ -347,16 +353,65 @@ interface TaskItemProps {
   key?: React.Key;
   task: Task;
   projects: Project[];
+  isFeatured?: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onUpdate: (updates: Partial<Task>) => void;
   onClick: () => void;
 }
 
-const TaskItem = ({ task, projects, onToggle, onDelete, onClick }: TaskItemProps) => {
+const TaskItem = ({ task, projects, isFeatured, onToggle, onDelete, onUpdate, onClick }: TaskItemProps) => {
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
-  const hasDueDate = !!task.dueDate;
-  const overdue = hasDueDate && task.status !== 'completed' && isOverdue(task.dueDate!);
+  const isHighPriority = task.priority === 'high';
+  const isCompleted = task.status === 'completed';
 
+  const toggleFeatured = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const tags = task.tags || [];
+    if (tags.includes('featured')) {
+      onUpdate({ tags: tags.filter(t => t !== 'featured') });
+    } else {
+      onUpdate({ tags: [...tags, 'featured'] });
+    }
+  };
+
+  // Fallback to relative due date or generic time for visual
+  const timeStr = task.dueDate ? formatRelativeDate(task.dueDate) : "Anytime";
+
+  if (isFeatured) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        transition={{ duration: 0.2 }}
+        className="group relative flex flex-col p-5 bg-zinc-100 dark:bg-[#1a1a1b] rounded-[22px] border border-transparent dark:border-[#262626]/50 cursor-pointer shadow-sm hover:shadow-md transition-shadow my-2"
+        onClick={onClick}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-[10px] font-extrabold tracking-[0.15em] uppercase text-indigo-600 dark:text-blue-400">
+            {project?.name || 'FEATURED TASK'}
+          </span>
+          <button onClick={toggleFeatured} className="text-zinc-400 hover:text-indigo-600 dark:hover:text-blue-500 transition-colors relative z-10" title="Remove Feature Status">
+            {isCompleted ? <CheckCircle2 size={18} className="fill-blue-500 text-white" /> : <Star size={18} className="fill-blue-500 text-blue-500" />}
+          </button>
+        </div>
+        <h3 className={cn("text-[20px] font-bold text-zinc-900 dark:text-white leading-[1.3] mb-8 pr-4", isCompleted && "line-through opacity-50")}>
+          {task.title}
+        </h3>
+        <div className="flex justify-between items-end">
+          <div className="flex -space-x-2">
+            <div className="w-7 h-7 rounded-full bg-teal-500 border-2 border-zinc-100 dark:border-[#1c1c1c] flex items-center justify-center shrink-0 shadow-sm" />
+            <div className="w-7 h-7 rounded-full bg-rose-500 border-2 border-zinc-100 dark:border-[#1c1c1c] flex items-center justify-center shrink-0 shadow-sm" />
+          </div>
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 font-mono tracking-wide">{timeStr}</span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Normal Card
   return (
     <motion.div
       layout
@@ -364,85 +419,66 @@ const TaskItem = ({ task, projects, onToggle, onDelete, onClick }: TaskItemProps
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
-      className="group flex items-center gap-3 px-4 py-3 bg-white dark:bg-zinc-900/80 border border-zinc-100 dark:border-zinc-800/80 rounded-xl hover:border-zinc-300 dark:hover:border-zinc-700 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-sm"
+      className={cn(
+        "group relative flex items-center gap-4 px-4 py-3.5 bg-white dark:bg-[#131415] rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-[#1a1b1c] transition-all border border-zinc-100 dark:border-transparent my-0.5",
+        isHighPriority && !isCompleted && "dark:border-l-[3px] dark:border-l-rose-500/80 border-l-[3px] border-l-rose-500"
+      )}
       onClick={onClick}
     >
       {/* Checkbox */}
       <button
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className="shrink-0"
+        className="shrink-0 relative"
       >
         <div
           className={cn(
-            'w-[18px] h-[18px] rounded-md border-2 transition-all flex items-center justify-center',
-            task.status === 'completed'
-              ? 'bg-indigo-600 border-indigo-600 text-white scale-100'
-              : 'border-zinc-300 dark:border-zinc-600 hover:border-indigo-400 dark:hover:border-indigo-500'
+            'w-5 h-5 rounded-full flex items-center justify-center transition-all',
+             isCompleted
+              ? 'bg-zinc-200 dark:bg-zinc-800'
+              : 'border-2 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500'
           )}
         >
-          {task.status === 'completed' && <CheckCircle2 size={11} strokeWidth={3} />}
+          {isCompleted && <CheckCircle2 size={13} className="text-zinc-500 dark:text-zinc-400" />}
+          {!isCompleted && isHighPriority && <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />}
         </div>
       </button>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
         <h3
           className={cn(
-            'text-sm font-medium truncate transition-all text-zinc-800 dark:text-zinc-100',
-            task.status === 'completed' && 'text-zinc-400 dark:text-zinc-500 line-through'
+            'text-[15px] font-semibold truncate transition-all',
+            isCompleted ? 'text-zinc-400 dark:text-zinc-600 line-through font-medium' : 'text-zinc-800 dark:text-white'
           )}
         >
           {task.title}
         </h3>
-
-        {/* Meta line */}
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {hasDueDate && task.status !== 'completed' && (
-            <span className={cn(
-              'text-[10px] font-semibold flex items-center gap-0.5',
-              overdue ? 'text-rose-500' : 'text-zinc-400 dark:text-zinc-500'
-            )}>
-              <Calendar size={9} />
-              {formatRelativeDate(task.dueDate!)}
-            </span>
-          )}
-          {project && (
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: project.color }} />
-              {project.name}
-            </span>
-          )}
-          {task.tags && task.tags.length > 0 && task.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400">
-              #{tag}
-            </span>
-          ))}
-          {task.subtasks && task.subtasks.length > 0 && (
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
-              {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} done
-            </span>
-          )}
-        </div>
+        <span className={cn("text-xs font-medium truncate", isHighPriority && !isCompleted ? "text-rose-500" : "text-zinc-500 dark:text-[#888]")}>
+          {project?.name || 'Obsidian Flow'} {isHighPriority && !isCompleted ? '  High Priority' : ''}
+        </span>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        {task.priority === 'high' && (
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
-            High
-          </span>
-        )}
-        {task.priority === 'medium' && (
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-            Med
-          </span>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-rose-500 dark:hover:text-rose-400 transition-all rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/20"
-        >
-          <Trash2 size={13} />
-        </button>
+      <div className="flex items-center shrink-0 pl-1">
+        <span className="text-[11px] font-medium text-zinc-400 dark:text-[#666] font-mono sm:group-hover:opacity-0 transition-opacity">
+          {timeStr === 'Anytime' ? '--:--' : timeStr}
+        </span>
+        <div className="flex sm:absolute sm:right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 items-center gap-0.5 transition-all bg-white dark:bg-[#131415] ml-2 sm:ml-0 sm:pl-2">
+          <button
+            onClick={toggleFeatured}
+            className="p-1.5 text-zinc-400 hover:text-blue-500 transition-all rounded-md"
+            title="Feature this task"
+          >
+            <Star size={16} className={task.tags?.includes('featured') ? "fill-blue-500 text-blue-500" : ""} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-1.5 text-zinc-400 hover:text-rose-500 transition-all rounded-md"
+            title="Delete task"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );

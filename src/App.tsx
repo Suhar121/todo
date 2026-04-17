@@ -21,7 +21,7 @@ import { HabitTracker } from './components/HabitTracker';
 import { UniversalInput } from './components/UniversalInput';
 import { ToastContainer, ToastItem, ToastType } from './components/Toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogIn, UserPlus, User as UserIcon, Sun, Moon, Menu, Layout, Eye, EyeOff, Briefcase } from 'lucide-react';
+import { LogIn, UserPlus, User as UserIcon, Sun, Moon, Menu, Layout, Eye, EyeOff, Briefcase, Search, Calendar, Folder, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { getGreeting } from './lib/utils';
 
 const WORK_TYPES = [
@@ -120,16 +120,18 @@ export default function App() {
       }
     );
 
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const u = session.user;
-        const meta = u.user_metadata || {};
+    // Check existing session against the server
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error || !user) {
+        supabase.auth.signOut();
+        setUser(null);
+      } else {
+        const meta = user.user_metadata || {};
         setUser({
-          uid: u.id,
-          username: meta.display_name || u.email?.split('@')[0] || 'User',
-          email: u.email || '',
-          displayName: meta.display_name || u.email?.split('@')[0] || 'User',
+          uid: user.id,
+          username: meta.display_name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          displayName: meta.display_name || user.email?.split('@')[0] || 'User',
           photoURL: meta.avatar_url,
           workType: meta.work_type,
         });
@@ -693,7 +695,7 @@ export default function App() {
   // RENDER: MAIN APP
   // ===========================
   return (
-    <div className="flex h-screen bg-white dark:bg-zinc-950 overflow-hidden font-sans">
+    <div className="flex h-screen bg-white dark:bg-[#0e0e0e] overflow-hidden font-sans">
       <Sidebar
         projects={projects}
         tasks={tasks}
@@ -708,42 +710,48 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-900 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0e0e0e] overflow-hidden">
         {/* Top bar */}
-        <header className="h-14 flex items-center justify-between px-4 sm:px-8 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 sticky top-0 z-20">
-          <div className="flex items-center gap-3 flex-1">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors md:hidden text-zinc-500 dark:text-zinc-400"
-            >
-              <Menu size={20} />
-            </button>
-
-            <UniversalInput
-              user={user}
-              projects={projects}
-              onAddTask={addTask}
-              onAddNote={addNote}
-            />
+        <header className="h-16 shrink-0 flex items-center justify-between px-6 bg-white dark:bg-[#0e0e0e] sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-zinc-700 dark:to-zinc-900 flex items-center justify-center overflow-hidden text-white text-sm font-bold shadow-sm border border-zinc-200 dark:border-zinc-800">
+              {user.displayName?.[0]?.toUpperCase() || <UserIcon size={15} />}
+            </div>
+            <div className="flex flex-col justify-center gap-0.5">
+              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">
+                {getGreeting()}
+              </span>
+              <span className="text-lg leading-none font-bold text-zinc-900 dark:text-white tracking-tight capitalize">
+                {user.displayName?.split(' ')[0] || 'User'}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 pl-4 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block w-64">
+              <UniversalInput
+                user={user}
+                projects={projects}
+                onAddTask={addTask}
+                onAddNote={addNote}
+              />
+            </div>
+            <button className="md:hidden text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-white transition-colors">
+              <Search size={22} />
+            </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400 dark:text-zinc-500"
+              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-[#1a1a1a] transition-colors text-zinc-400 dark:text-zinc-500"
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center overflow-hidden text-white text-xs font-bold shadow-sm">
-              {user.displayName?.[0]?.toUpperCase() || <UserIcon size={14} />}
-            </div>
           </div>
         </header>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           {activeView === 'habits' ? (
             <HabitTracker
               habits={habits}
@@ -769,6 +777,38 @@ export default function App() {
             />
           )}
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden flex items-center justify-around h-[68px] bg-[#0e0e0e] shrink-0 border-t border-[#1a1a1a] px-2 pb-safe relative z-20">
+          <button 
+            onClick={() => setActiveView('inbox')}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'inbox' || activeView === 'today' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+          >
+            <Layout size={20} strokeWidth={activeView === 'inbox' || activeView === 'today' ? 2.5 : 2} />
+            {activeView !== 'inbox' && activeView !== 'today' && <span className="text-[10px] mt-0.5 font-medium">Inbox</span>}
+          </button>
+          <button 
+            onClick={() => setActiveView('upcoming')}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'upcoming' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+          >
+            <Calendar size={20} strokeWidth={activeView === 'upcoming' ? 2.5 : 2} />
+            {activeView !== 'upcoming' && <span className="text-[10px] mt-0.5 font-medium">Upcoming</span>}
+          </button>
+          <button 
+            onClick={() => setActiveView('completed')}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'completed' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+          >
+            <CheckCircle2 size={20} strokeWidth={activeView === 'completed' ? 2.5 : 2} />
+            {activeView !== 'completed' && <span className="text-[10px] mt-0.5 font-medium">Completed</span>}
+          </button>
+          <button 
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="flex flex-col items-center justify-center w-14 h-12 rounded-[14px] text-[#888] transition-colors"
+          >
+            <Menu size={20} strokeWidth={2} />
+            <span className="text-[10px] mt-0.5 font-medium">Menu</span>
+          </button>
+        </nav>
       </main>
 
       {/* Toast notifications */}

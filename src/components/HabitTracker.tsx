@@ -132,7 +132,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-8 h-full overflow-y-auto custom-scrollbar space-y-10"
+      className="p-4 sm:p-8 h-full overflow-y-auto custom-scrollbar space-y-10"
     >
       {/* ================================ */}
       {/* HABITS SECTION */}
