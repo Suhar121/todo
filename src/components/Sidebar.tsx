@@ -15,7 +15,7 @@ import {
   X,
   Menu,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, getLocalDateKey, taskDateKey } from '../lib/utils';
 import { AppUser, Project, Task } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -79,12 +79,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const countMap = {
     inbox: tasks.filter(t => t.status !== 'completed').length,
     today: tasks.filter(t => {
-      const today = new Date().toISOString().split('T')[0];
-      return t.dueDate?.startsWith(today) && t.status !== 'completed';
+      const today = getLocalDateKey();
+      return taskDateKey(t.dueDate) === today && t.status !== 'completed';
     }).length,
     upcoming: tasks.filter(t => {
-      const today = new Date().toISOString().split('T')[0];
-      return t.dueDate && t.dueDate > today && t.status !== 'completed';
+      const today = getLocalDateKey();
+      const dueKey = taskDateKey(t.dueDate);
+      return !!dueKey && dueKey > today && t.status !== 'completed';
     }).length,
     completed: tasks.filter(t => t.status === 'completed').length,
   };

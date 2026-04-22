@@ -24,6 +24,8 @@ export async function loadTasks(): Promise<Task[]> {
     title: row.title,
     description: row.description || '',
     dueDate: row.due_date || undefined,
+    reminderTime: row.reminder_time?.substring(0, 5) || undefined, // format as HH:mm
+    progress: typeof row.progress === 'number' ? row.progress : 0,
     priority: row.priority || 'medium',
     status: row.status || 'todo',
     projectId: row.project_id || undefined,
@@ -46,6 +48,8 @@ export async function insertTask(task: Task): Promise<Task | null> {
       title: task.title,
       description: task.description || '',
       due_date: task.dueDate || null,
+      reminder_time: task.reminderTime || null,
+      progress: task.progress,
       priority: task.priority,
       status: task.status,
       project_id: task.projectId || null,
@@ -63,6 +67,8 @@ export async function insertTask(task: Task): Promise<Task | null> {
     title: data.title,
     description: data.description || '',
     dueDate: data.due_date || undefined,
+    reminderTime: data.reminder_time?.substring(0, 5) || undefined,
+    progress: typeof data.progress === 'number' ? data.progress : 0,
     priority: data.priority,
     status: data.status,
     projectId: data.project_id || undefined,
@@ -79,6 +85,8 @@ export async function updateTaskDb(id: string, data: Partial<Task>): Promise<voi
   if (data.title !== undefined) updates.title = data.title;
   if (data.description !== undefined) updates.description = data.description;
   if (data.dueDate !== undefined) updates.due_date = data.dueDate || null;
+  if (data.reminderTime !== undefined) updates.reminder_time = data.reminderTime || null;
+  if (data.progress !== undefined) updates.progress = data.progress;
   if (data.priority !== undefined) updates.priority = data.priority;
   if (data.status !== undefined) updates.status = data.status;
   if (data.projectId !== undefined) updates.project_id = data.projectId || null;

@@ -23,7 +23,9 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
   const [description, setDescription] = useState(task.description || '');
   const [priority, setPriority] = useState<Priority>(task.priority);
   const [status, setStatus] = useState<Status>(task.status);
+  const [progress, setProgress] = useState(task.progress ?? (task.status === 'completed' ? 100 : 0));
   const [dueDate, setDueDate] = useState(task.dueDate?.split('T')[0] || '');
+  const [reminderTime, setReminderTime] = useState(task.reminderTime || '');
   const [projectId, setProjectId] = useState(task.projectId || '');
   const [tags, setTags] = useState<string[]>(task.tags || []);
   const [tagInput, setTagInput] = useState('');
@@ -36,7 +38,9 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     setDescription(task.description || '');
     setPriority(task.priority);
     setStatus(task.status);
+    setProgress(task.progress ?? (task.status === 'completed' ? 100 : 0));
     setDueDate(task.dueDate?.split('T')[0] || '');
+    setReminderTime(task.reminderTime || '');
     setProjectId(task.projectId || '');
     setTags(task.tags || []);
     setSubtasks(task.subtasks || []);
@@ -52,14 +56,16 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         description,
         priority,
         status,
-        dueDate: dueDate ? new Date(dueDate + 'T00:00:00').toISOString() : undefined,
+        progress,
+        dueDate: dueDate || undefined,
+        reminderTime: reminderTime || undefined,
         projectId: projectId || undefined,
         tags,
         subtasks,
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [title, description, priority, status, dueDate, projectId, JSON.stringify(tags), JSON.stringify(subtasks)]);
+  }, [title, description, priority, status, progress, dueDate, reminderTime, projectId, JSON.stringify(tags), JSON.stringify(subtasks)]);
 
   const addSubtask = () => {
     if (!newSubtask.trim()) return;
@@ -166,7 +172,13 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as Status)}
+                onChange={(e) => {
+                  const nextStatus = e.target.value as Status;
+                  setStatus(nextStatus);
+                  if (nextStatus === 'completed') setProgress(100);
+                  else if (nextStatus === 'todo') setProgress(0);
+                  else if (progress === 0) setProgress(50);
+                }}
                 className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800"
               >
                 <option value="todo">To Do</option>
@@ -194,17 +206,28 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
               </select>
             </div>
 
-            {/* Due Date */}
-            <div className="space-y-1.5">
+            {/* Schedule */}
+            <div className="space-y-1.5 focus-within-ring">
               <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1">
-                <Calendar size={10} /> Due Date
+                <Calendar size={10} /> Schedule
               </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800"
-              />
+              <div className="flex flex-col gap-2">
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800 focus:border-indigo-500/40"
+                />
+                <div className="flex items-center gap-2">
+                   <input
+                     type="time"
+                     value={reminderTime}
+                     onChange={(e) => setReminderTime(e.target.value)}
+                     title="Reminder time"
+                     className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800 focus:border-indigo-500/40"
+                   />
+                </div>
+              </div>
             </div>
 
             {/* Project */}
@@ -223,6 +246,29 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Progress */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Task Progress</label>
+              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{progress}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={progress}
+              onChange={(e) => {
+                const nextProgress = Number(e.target.value);
+                setProgress(nextProgress);
+                if (nextProgress >= 100) setStatus('completed');
+                else if (nextProgress <= 0) setStatus('todo');
+                else setStatus('in_progress');
+              }}
+              className="w-full accent-emerald-500"
+            />
           </div>
 
           {/* Description */}

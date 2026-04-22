@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   AppUser,
   Task,
@@ -18,7 +18,7 @@ import {
   X,
   Star,
 } from 'lucide-react';
-import { cn, formatRelativeDate, isOverdue } from '../lib/utils';
+import { cn, formatRelativeDate, getLocalDateKey, isOverdue, taskDateKey } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { AddTaskInline } from './AddTaskInline';
 import { TaskDetail } from './TaskDetail';
@@ -29,7 +29,14 @@ interface TaskBoardProps {
   notes: Note[];
   projects: Project[];
   user: AppUser;
-  onAddTask: (data: { title: string; priority?: Priority; dueDate?: string; projectId?: string; tags?: string[] }) => void;
+  onAddTask: (data: {
+    title: string;
+    priority?: Priority;
+    dueDate?: string;
+    projectId?: string;
+    description?: string;
+    tags?: string[];
+  }) => void;
   onUpdateTask: (id: string, data: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onAddNote: (content: string) => void;
@@ -67,12 +74,13 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
   const filteredTasks = tasks.filter(task => {
     if (view === 'inbox') return task.status !== 'completed';
     if (view === 'today') {
-      const today = new Date().toISOString().split('T')[0];
-      return task.dueDate?.startsWith(today) && task.status !== 'completed';
+      const today = getLocalDateKey();
+      return taskDateKey(task.dueDate) === today && task.status !== 'completed';
     }
     if (view === 'upcoming') {
-      const today = new Date().toISOString().split('T')[0];
-      return task.dueDate && task.dueDate > today && task.status !== 'completed';
+      const today = getLocalDateKey();
+      const dueKey = taskDateKey(task.dueDate);
+      return !!dueKey && dueKey > today && task.status !== 'completed';
     }
     if (view === 'completed') return task.status === 'completed';
     if (view.startsWith('project-')) {
@@ -83,7 +91,10 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
 
   const toggleTaskStatus = (task: Task) => {
     const newStatus: Status = task.status === 'completed' ? 'todo' : 'completed';
-    onUpdateTask(task.id, { status: newStatus });
+    onUpdateTask(task.id, {
+      status: newStatus,
+      progress: newStatus === 'completed' ? 100 : 0,
+    });
   };
 
   const handleDeleteTask = (id: string) => {
@@ -97,6 +108,21 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
     setQuickNoteInput('');
     setIsQuickNoteOpen(false);
   };
+
+  const convertNoteToTask = useCallback((note: Note) => {
+    const text = note.content.trim();
+    if (!text) return;
+
+    const [firstLine] = text.split('\n');
+    const title = (firstLine?.trim() || text).slice(0, 120);
+
+    onAddTask({
+      title,
+      description: text,
+      tags: ['idea'],
+      priority: 'medium',
+    });
+  }, [onAddTask]);
 
   // ============================================
   // NOTES VIEW
@@ -180,6 +206,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
                 note={note}
                 onUpdate={onUpdateNote}
                 onDelete={onDeleteNote}
+                onConvertToTask={convertNoteToTask}
               />
             ))}
           </AnimatePresence>
@@ -316,7 +343,12 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
           )}
 
           {notes.slice(0, 8).map(note => (
-            <NoteCardMini key={note.id} note={note} onDelete={onDeleteNote} />
+            <NoteCardMini
+              key={note.id}
+              note={note}
+              onDelete={onDeleteNote}
+              onConvertToTask={convertNoteToTask}
+            />
           ))}
 
           {/* Quick note CTA */}
@@ -364,6 +396,7 @@ const TaskItem = ({ task, projects, isFeatured, onToggle, onDelete, onUpdate, on
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   const isHighPriority = task.priority === 'high';
   const isCompleted = task.status === 'completed';
+  const isPartiallyDone = task.progress > 0 && task.progress < 100;
 
   const toggleFeatured = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -405,7 +438,12 @@ const TaskItem = ({ task, projects, isFeatured, onToggle, onDelete, onUpdate, on
             <div className="w-7 h-7 rounded-full bg-teal-500 border-2 border-zinc-100 dark:border-[#1c1c1c] flex items-center justify-center shrink-0 shadow-sm" />
             <div className="w-7 h-7 rounded-full bg-rose-500 border-2 border-zinc-100 dark:border-[#1c1c1c] flex items-center justify-center shrink-0 shadow-sm" />
           </div>
-          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 font-mono tracking-wide">{timeStr}</span>
+          <div className="text-right">
+            {isPartiallyDone && (
+              <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{task.progress}% done</div>
+            )}
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 font-mono tracking-wide">{timeStr}</span>
+          </div>
         </div>
       </motion.div>
     );
@@ -454,7 +492,9 @@ const TaskItem = ({ task, projects, isFeatured, onToggle, onDelete, onUpdate, on
           {task.title}
         </h3>
         <span className={cn("text-xs font-medium truncate", isHighPriority && !isCompleted ? "text-rose-500" : "text-zinc-500 dark:text-[#888]")}>
-          {project?.name || 'Obsidian Flow'} {isHighPriority && !isCompleted ? '  High Priority' : ''}
+          {project?.name || 'Obsidian Flow'}
+          {isPartiallyDone ? `  •  ${task.progress}% done` : ''}
+          {isHighPriority && !isCompleted ? '  •  High Priority' : ''}
         </span>
       </div>
 
@@ -492,9 +532,10 @@ interface NoteCardProps {
   note: Note;
   onUpdate: (id: string, content: string) => void;
   onDelete: (id: string) => void;
+  onConvertToTask: (note: Note) => void;
 }
 
-const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
+const NoteCard = ({ note, onUpdate, onDelete, onConvertToTask }: NoteCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(note.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -580,12 +621,21 @@ const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
               <button
                 onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                 className="p-1 text-zinc-400 hover:text-indigo-500 transition-colors rounded"
+                title="Edit note"
               >
                 <Pencil size={11} />
               </button>
               <button
+                onClick={(e) => { e.stopPropagation(); onConvertToTask(note); }}
+                className="p-1 text-zinc-400 hover:text-emerald-500 transition-colors rounded"
+                title="Convert to todo"
+              >
+                <CheckCircle2 size={11} />
+              </button>
+              <button
                 onClick={handleDelete}
                 className="p-1 text-zinc-400 hover:text-rose-500 transition-colors rounded"
+                title="Delete note"
               >
                 <Trash2 size={11} />
               </button>
@@ -604,21 +654,32 @@ interface NoteCardMiniProps {
   key?: React.Key;
   note: Note;
   onDelete: (id: string) => void;
+  onConvertToTask: (note: Note) => void;
 }
 
-const NoteCardMini = ({ note, onDelete }: NoteCardMiniProps) => {
+const NoteCardMini = ({ note, onDelete, onConvertToTask }: NoteCardMiniProps) => {
   return (
     <div className="p-3 bg-white dark:bg-zinc-900/80 border border-zinc-100 dark:border-zinc-800 rounded-lg text-[12px] text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed relative group">
       <div className="line-clamp-3 whitespace-pre-wrap">{note.content}</div>
       <div className="mt-2 text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
         {formatRelativeDate(note.createdAt)}
       </div>
-      <button
-        onClick={() => onDelete(note.id)}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-0.5 text-zinc-300 dark:text-zinc-600 hover:text-rose-500 transition-all"
-      >
-        <Trash2 size={11} />
-      </button>
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all">
+        <button
+          onClick={() => onConvertToTask(note)}
+          className="p-0.5 text-zinc-300 dark:text-zinc-600 hover:text-emerald-500"
+          title="Convert to todo"
+        >
+          <CheckCircle2 size={11} />
+        </button>
+        <button
+          onClick={() => onDelete(note.id)}
+          className="p-0.5 text-zinc-300 dark:text-zinc-600 hover:text-rose-500"
+          title="Delete note"
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
     </div>
   );
 };

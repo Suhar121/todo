@@ -17,6 +17,8 @@ export interface AppUser {
   displayName: string;
   photoURL?: string;
   workType?: string;
+  telegramToken?: string;
+  telegramChatId?: string;
 }
 
 export interface Project {
@@ -38,6 +40,8 @@ export interface Task {
   title: string;
   description?: string;
   dueDate?: string;
+  reminderTime?: string;
+  progress: number; // 0-100
   priority: Priority;
   status: Status;
   projectId?: string;

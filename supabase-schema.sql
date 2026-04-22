@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   due_date DATE,
+  reminder_time TIME,
+  progress INT DEFAULT 0,
   priority TEXT DEFAULT 'medium',
   status TEXT DEFAULT 'todo',
   project_id UUID,
@@ -63,6 +65,8 @@ CREATE TABLE IF NOT EXISTS achievements (
 -- Row Level Security — each user only sees their own data
 -- ============================================
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_time TIME;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress INT DEFAULT 0;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
