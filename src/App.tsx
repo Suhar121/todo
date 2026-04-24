@@ -103,7 +103,12 @@ export default function App() {
   useEffect(() => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        // Clean up URL after OAuth callback (remove tokens from address bar)
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+        
         if (session?.user) {
           const u = session.user;
           const meta = u.user_metadata || {};
