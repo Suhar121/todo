@@ -509,10 +509,12 @@ export default function App() {
     setAuthError(null);
     setAuthLoading(true);
     
+    const redirectTo = import.meta.env.VITE_REDIRECT_URL || window.location.origin;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     });
 
