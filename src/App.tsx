@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,6 +18,8 @@ import { ACHIEVEMENTS } from './lib/achievements';
 import { Sidebar } from './components/Sidebar';
 import { TaskBoard } from './components/TaskBoard';
 import { HabitTracker } from './components/HabitTracker';
+import { AllProjectsPage } from './components/AllProjectsPage';
+
 import { UniversalInput } from './components/UniversalInput';
 import { ToastContainer, ToastItem, ToastType } from './components/Toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,16 +29,16 @@ import { getGreeting } from './lib/utils';
 import { useTelegramReminders } from './lib/useTelegramReminders';
 
 const WORK_TYPES = [
-  { value: 'student', label: 'Student', emoji: '📚' },
-  { value: 'developer', label: 'Developer', emoji: '💻' },
-  { value: 'designer', label: 'Designer', emoji: '🎨' },
-  { value: 'entrepreneur', label: 'Entrepreneur', emoji: '🚀' },
-  { value: 'freelancer', label: 'Freelancer', emoji: '✨' },
-  { value: 'manager', label: 'Manager', emoji: '📊' },
-  { value: 'creator', label: 'Content Creator', emoji: '🎬' },
-  { value: 'marketer', label: 'Marketer', emoji: '📢' },
-  { value: 'researcher', label: 'Researcher', emoji: '🔬' },
-  { value: 'other', label: 'Other', emoji: '🌍' },
+  { value: 'student', label: 'Student', emoji: 'ðŸ“š' },
+  { value: 'developer', label: 'Developer', emoji: 'ðŸ’»' },
+  { value: 'designer', label: 'Designer', emoji: 'ðŸŽ¨' },
+  { value: 'entrepreneur', label: 'Entrepreneur', emoji: 'ðŸš€' },
+  { value: 'freelancer', label: 'Freelancer', emoji: 'âœ¨' },
+  { value: 'manager', label: 'Manager', emoji: 'ðŸ“Š' },
+  { value: 'creator', label: 'Content Creator', emoji: 'ðŸŽ¬' },
+  { value: 'marketer', label: 'Marketer', emoji: 'ðŸ“¢' },
+  { value: 'researcher', label: 'Researcher', emoji: 'ðŸ”¬' },
+  { value: 'other', label: 'Other', emoji: 'ðŸŒ' },
 ];
 
 export default function App() {
@@ -502,7 +504,7 @@ export default function App() {
     setPasswordInput('');
     setDisplayNameInput('');
     setWorkTypeInput('');
-    showToast('Account created! Welcome to FocusFlow 🎉', 'success');
+    showToast('Account created! Welcome to FocusFlow ðŸŽ‰', 'success');
   };
 
   const handleGoogleLogin = async () => {
@@ -847,6 +849,14 @@ export default function App() {
               onAddHabit={addHabit}
               onDeleteHabit={deleteHabit}
               onToggleHabitDay={toggleHabitDay}
+            />
+          ) : activeView === 'projects' ? (
+            <AllProjectsPage
+              projects={projects}
+              tasks={tasks}
+              onAddProject={addProject}
+              onUpdateProject={updateProject}
+              onDeleteProject={deleteProject}
             />
           ) : (
             <TaskBoard

@@ -1,20 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  Inbox,
-  Calendar,
-  CalendarRange,
-  CheckCircle2,
-  Layout,
-  Plus,
-  LogOut,
-  Lightbulb,
-  Flame,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  X,
-  Menu,
-} from 'lucide-react';
+﻿import React, { useState, useRef, useEffect } from 'react';
+import { Inbox, Calendar, CalendarRange, CheckCircle2, Layout, Plus, LogOut, Lightbulb, Flame, MoreHorizontal, Pencil, Trash2, X, Menu, FolderOpen } from 'lucide-react';
 import { cn, getLocalDateKey, taskDateKey } from '../lib/utils';
 import { AppUser, Project, Task } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
@@ -124,7 +109,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={18} />, count: countMap.completed },
     { id: 'notes', label: 'Ideas & Notes', icon: <Lightbulb size={18} /> },
     { id: 'habits', label: 'Habits & Streaks', icon: <Flame size={18} /> },
-  ];
+    { id: 'projects', label: 'All Projects', icon: <FolderOpen size={18} />, count: projects.length },
+    ];
 
   const sidebarContent = (
     <div className="w-[260px] h-full flex flex-col p-5 bg-sidebar-bg dark:bg-zinc-950 border-r border-border-subtle dark:border-zinc-800 select-none-deep">

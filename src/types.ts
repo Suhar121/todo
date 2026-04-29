@@ -27,6 +27,8 @@ export interface Project {
   color: string;
   userId: string;
   createdAt: string;
+  link?: string;
+  status?: 'active' | 'planning' | 'on_hold' | 'completed';
 }
 
 export interface Subtask {

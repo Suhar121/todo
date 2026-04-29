@@ -119,6 +119,8 @@ export async function loadProjects(): Promise<Project[]> {
     color: row.color,
     userId: row.user_id,
     createdAt: row.created_at,
+    link: row.link || undefined,
+    status: row.status || undefined,
   }));
 }
 
@@ -152,6 +154,8 @@ export async function updateProjectDb(id: string, data: Partial<Project>): Promi
   const updates: Record<string, unknown> = {};
   if (data.name !== undefined) updates.name = data.name;
   if (data.color !== undefined) updates.color = data.color;
+  if (data.link !== undefined) updates.link = data.link;
+  if (data.status !== undefined) updates.status = data.status;
 
   const { error } = await supabase.from('projects').update(updates).eq('id', id);
   if (error) console.error('updateProject error:', error);
