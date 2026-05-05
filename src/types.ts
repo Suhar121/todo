@@ -50,6 +50,9 @@ export interface Task {
   userId: string;
   tags: string[];
   subtasks: Subtask[];
+  position?: number;
+  timeEstimate?: number; // Time estimate in minutes
+  completedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

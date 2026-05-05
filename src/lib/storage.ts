@@ -32,6 +32,9 @@ export async function loadTasks(): Promise<Task[]> {
     userId: row.user_id,
     tags: row.tags || [],
     subtasks: (row.subtasks || []) as Subtask[],
+    position: typeof row.position === 'number' ? row.position : 0,
+    timeEstimate: typeof row.time_estimate === 'number' ? row.time_estimate : undefined,
+    completedAt: row.completed_at || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -56,6 +59,9 @@ export async function insertTask(task: Task): Promise<Task | null> {
       user_id: task.userId,
       tags: task.tags,
       subtasks: task.subtasks,
+      position: task.position || 0,
+      time_estimate: task.timeEstimate || null,
+      completed_at: task.completedAt || null,
     })
     .select()
     .single();
@@ -75,6 +81,9 @@ export async function insertTask(task: Task): Promise<Task | null> {
     userId: data.user_id,
     tags: data.tags || [],
     subtasks: (data.subtasks || []) as Subtask[],
+    position: typeof data.position === 'number' ? data.position : 0,
+    timeEstimate: typeof data.time_estimate === 'number' ? data.time_estimate : undefined,
+    completedAt: data.completed_at || undefined,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
@@ -92,6 +101,9 @@ export async function updateTaskDb(id: string, data: Partial<Task>): Promise<voi
   if (data.projectId !== undefined) updates.project_id = data.projectId || null;
   if (data.tags !== undefined) updates.tags = data.tags;
   if (data.subtasks !== undefined) updates.subtasks = data.subtasks;
+  if (data.position !== undefined) updates.position = data.position;
+  if (data.timeEstimate !== undefined) updates.time_estimate = data.timeEstimate || null;
+  if (data.completedAt !== undefined) updates.completed_at = data.completedAt || null;
 
   const { error } = await supabase.from('tasks').update(updates).eq('id', id);
   if (error) console.error('updateTask error:', error);

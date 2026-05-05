@@ -52,7 +52,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [editingProjectId]);
 
-  // Close context menu on outside click
   useEffect(() => {
     if (!contextMenuProjectId) return;
     const handler = () => setContextMenuProjectId(null);
@@ -60,7 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => window.removeEventListener('click', handler);
   }, [contextMenuProjectId]);
 
-  // Task counts
   const countMap = {
     inbox: tasks.filter(t => t.status !== 'completed').length,
     today: tasks.filter(t => {
@@ -110,32 +108,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'notes', label: 'Ideas & Notes', icon: <Lightbulb size={18} /> },
     { id: 'habits', label: 'Habits & Streaks', icon: <Flame size={18} /> },
     { id: 'projects', label: 'All Projects', icon: <FolderOpen size={18} />, count: projects.length },
-    ];
+  ];
 
   const sidebarContent = (
-    <div className="w-[260px] h-full flex flex-col p-5 bg-sidebar-bg dark:bg-zinc-950 border-r border-border-subtle dark:border-zinc-800 select-none-deep">
+    <div 
+      className="w-[260px] h-full flex flex-col p-5 border-r border-zinc-200 dark:border-white/5 select-none-deep relative z-10"
+      style={{ 
+        background: 'linear-gradient(180deg, rgba(10,10,11,0.8) 0%, rgba(9,9,11,0.8) 100%)',
+        backdropFilter: 'blur(20px)',
+      }}
+    >
       {/* Logo & User */}
       <div className="flex items-center gap-2.5 px-1 mb-8">
-        <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
-          <Layout size={16} strokeWidth={2.5} />
+        <div 
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(99,102,241,0.9) 100%)',
+            boxShadow: '0 4px 12px rgba(139,92,246,0.3)'
+          }}
+        >
+          <Layout size={16} strokeWidth={2.5} className="text-white" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-text-main dark:text-zinc-50 truncate">FocusFlow</h3>
-          <p className="text-[10px] text-text-muted dark:text-zinc-500 font-semibold uppercase tracking-wider">{user.displayName || 'User'}</p>
+        <div className="min-w-0 flex-1 truncate">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white/90 truncate">FocusFlow</h3>
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider truncate">{user.displayName || 'User'}</p>
         </div>
-        {/* Mobile close */}
         <button
           onClick={onCloseMobile}
-          className="p-1.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors md:hidden"
+          className="p-1.5 rounded-md hover:bg-white/5 transition-colors text-zinc-500 hover:text-zinc-300 md:hidden ml-auto"
         >
           <X size={16} />
         </button>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
         {/* Main nav */}
         <div className="space-y-0.5">
-          <div className="px-3 mb-2 text-[10px] font-bold text-text-muted dark:text-zinc-500 uppercase tracking-widest">
+          <div className="px-3 mb-2 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
             Main
           </div>
           {navItems.map((item) => (
@@ -143,14 +152,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={cn(
-                'sidebar-item text-sm',
-                activeView === item.id && 'sidebar-item-active'
+                'flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer w-full text-sm',
+                activeView === item.id 
+                  ? 'bg-zinc-100 dark:bg-white/[0.06] text-zinc-900 dark:text-white' 
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-white/[0.03]'
               )}
             >
-              {item.icon}
+              <span className={cn(activeView === item.id && 'text-violet-400')}>{item.icon}</span>
               <span className="flex-1 text-left font-medium">{item.label}</span>
               {item.count !== undefined && item.count > 0 && (
-                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tabular-nums min-w-[18px] text-center">
+                <span className="text-[10px] font-semibold text-zinc-600 bg-white/[0.05] px-1.5 py-0.5 rounded-full tabular-nums">
                   {item.count}
                 </span>
               )}
@@ -160,17 +171,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Projects */}
         <div className="space-y-0.5">
-          <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-text-muted dark:text-zinc-500">
+          <div className="flex items-center justify-between px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
             <span>Projects</span>
             <button
               onClick={() => setIsAddingProject(true)}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-violet-400 transition-colors"
             >
               <Plus size={14} />
             </button>
           </div>
 
-          {/* Project list */}
           <div className="space-y-0.5">
             {projects.map((project) => (
               <div key={project.id} className="relative">
@@ -186,21 +196,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (e.key === 'Escape') { setEditingProjectId(null); setEditingProjectName(''); }
                       }}
                       onBlur={() => handleSubmitRename(project.id)}
-                      className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-indigo-400 text-zinc-900 dark:text-zinc-100 py-0.5"
+                      className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-violet-500/50 text-zinc-900 dark:text-white py-0.5"
                     />
                   </div>
                 ) : (
                   <button
                     onClick={() => handleNavClick(`project-${project.id}`)}
                     className={cn(
-                      'sidebar-item text-sm group',
-                      activeView === `project-${project.id}` && 'sidebar-item-active'
+                      'flex items-center gap-3 px-3 py-2 rounded-lg transition-all cursor-pointer w-full text-sm group',
+                      activeView === `project-${project.id}` 
+                        ? 'bg-zinc-100 dark:bg-white/[0.06] text-zinc-900 dark:text-white' 
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-white/[0.03]'
                     )}
                   >
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-white dark:ring-zinc-950" style={{ backgroundColor: project.color }} />
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/10" style={{ backgroundColor: project.color }} />
                     <span className="truncate font-medium flex-1 text-left">{project.name}</span>
                     {projectTaskCount(project.id) > 0 && (
-                      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tabular-nums">
+                      <span className="text-[10px] font-semibold text-zinc-600 tabular-nums">
                         {projectTaskCount(project.id)}
                       </span>
                     )}
@@ -209,21 +221,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         e.stopPropagation();
                         setContextMenuProjectId(contextMenuProjectId === project.id ? null : project.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
                     >
                       <MoreHorizontal size={14} />
                     </button>
                   </button>
                 )}
 
-                {/* Context menu */}
                 <AnimatePresence>
                   {contextMenuProjectId === project.id && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95, y: -4 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute right-2 top-full z-50 mt-1 py-1 w-36 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl"
+                      className="absolute right-2 top-full z-50 mt-1 py-1.5 w-36 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 shadow-xl"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -232,7 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           setEditingProjectName(project.name);
                           setContextMenuProjectId(null);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors text-zinc-700 dark:text-zinc-300"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                       >
                         <Pencil size={12} /> Rename
                       </button>
@@ -241,7 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           onDeleteProject(project.id);
                           setContextMenuProjectId(null);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-rose-600 dark:text-rose-400"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                       >
                         <Trash2 size={12} /> Delete
                       </button>
@@ -252,7 +263,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ))}
           </div>
 
-          {/* Add project inline */}
           <AnimatePresence>
             {isAddingProject && (
               <motion.div
@@ -262,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="overflow-hidden"
               >
                 <div className="flex items-center gap-2 px-3 py-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-300 dark:bg-zinc-600" />
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-600" />
                   <input
                     ref={newProjectInputRef}
                     value={newProjectName}
@@ -276,7 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       else { setIsAddingProject(false); setNewProjectName(''); }
                     }}
                     placeholder="Project name..."
-                    className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-indigo-400 text-zinc-900 dark:text-zinc-100 py-0.5 placeholder:text-zinc-300 dark:placeholder:text-zinc-600"
+                    className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-violet-500/50 text-white py-0.5 placeholder:text-zinc-600"
                   />
                 </div>
               </motion.div>
@@ -286,10 +296,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Logout */}
-      <div className="pt-4 border-t border-border-subtle dark:border-zinc-800">
+      <div className="pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <button
           onClick={onLogout}
-          className="sidebar-item text-sm text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 transition-colors w-full"
         >
           <LogOut size={18} />
           <span>Logout</span>
@@ -300,24 +310,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 md:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
             onClick={onCloseMobile}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <div
         className={cn(
           'h-full shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-40',
-          'fixed md:relative',
+          'fixed md:relative bg-white dark:bg-transparent',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >

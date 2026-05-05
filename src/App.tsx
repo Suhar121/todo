@@ -203,8 +203,34 @@ export default function App() {
   useTelegramReminders(user, tasks);
 
   // ===========================
-  // TASK CRUD
+  // TASK REORDERING
   // ===========================
+  const reorderTasks = useCallback((reorderedFilteredTasks: Task[]) => {
+    // Find what changed by comparing with current tasks state
+    // But reorderedFilteredTasks only has the filtered tasks.
+    // We can just assign them positions 0..N, but to minimize DB updates,
+    // let's assign positions based on their new index in reorderedFilteredTasks.
+    // Actually, setting all of them 0..N is fine locally.
+    
+    setTasks(prev => {
+      const next = [...prev];
+      // Update positions of the reordered tasks
+      reorderedFilteredTasks.forEach((t, i) => {
+        const index = next.findIndex(x => x.id === t.id);
+        if (index !== -1) {
+          next[index] = { ...next[index], position: i };
+        }
+      });
+      return next;
+    });
+
+    // Fire off DB updates for all these tasks (could be optimized, but this works for now)
+    reorderedFilteredTasks.forEach((t, i) => {
+      if (t.position !== i) {
+        updateTaskDb(t.id, { position: i });
+      }
+    });
+  }, []);
   const addTask = useCallback(async (data: {
     title: string;
     priority?: Priority;
@@ -766,7 +792,14 @@ export default function App() {
   // RENDER: MAIN APP
   // ===========================
   return (
-    <div className="flex h-screen bg-white dark:bg-[#0e0e0e] overflow-hidden font-sans">
+    <div className="flex h-screen bg-zinc-50 dark:bg-[#09090b] overflow-hidden font-sans relative">
+      {/* Ambient gradient orbs (visible in dark mode) */}
+      <div className='absolute inset-0 overflow-hidden pointer-events-none hidden dark:block z-0'>
+        <div className='absolute top-0 right-0 w-[700px] h-[700px] bg-gradient-to-br from-violet-600/10 via-transparent to-transparent rounded-full blur-3xl -translate-y-1/3 translate-x-1/3' />
+        <div className='absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/8 via-transparent to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/3' />
+        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-violet-600/5 via-indigo-600/5 to-transparent rounded-full blur-3xl' />
+      </div>
+
       <Sidebar
         projects={projects}
         tasks={tasks}
@@ -781,9 +814,9 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0e0e0e] overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-transparent overflow-hidden relative z-10">
         {/* Top bar */}
-        <header className="h-16 shrink-0 flex items-center justify-between px-6 bg-white dark:bg-[#0e0e0e] sticky top-0 z-20">
+        <header className="h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 bg-white/80 dark:bg-transparent backdrop-blur-md sticky top-0 z-20 border-b border-zinc-200 dark:border-white/5">
           <div className="flex items-center gap-3">
             {/* Avatar */}
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-zinc-700 dark:to-zinc-900 flex items-center justify-center overflow-hidden text-white text-sm font-bold shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -793,7 +826,7 @@ export default function App() {
               <span className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">
                 {getGreeting()}
               </span>
-              <span className="text-lg leading-none font-bold text-zinc-900 dark:text-white tracking-tight capitalize">
+              <span className="text-lg leading-none font-bold text-zinc-900 dark:text-zinc-100 tracking-tight capitalize">
                 {user.displayName?.split(' ')[0] || 'User'}
               </span>
             </div>
@@ -808,19 +841,19 @@ export default function App() {
                 onAddNote={addNote}
               />
             </div>
-            <button className="md:hidden text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-white transition-colors">
+            <button className="md:hidden text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors">
               <Search size={22} />
             </button>
             <button
               onClick={() => setActiveView('settings')}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-[#1a1a1a] transition-colors text-zinc-400 dark:text-zinc-500"
+              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors text-zinc-400 dark:text-zinc-500"
               title="Settings"
             >
               <SettingsIcon size={18} />
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-[#1a1a1a] transition-colors text-zinc-400 dark:text-zinc-500"
+              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors text-zinc-400 dark:text-zinc-500"
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -829,7 +862,7 @@ export default function App() {
         </header>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative pb-[68px] md:pb-0">
           {activeView === 'settings' ? (
              <SettingsPanel
                user={user}
@@ -869,6 +902,7 @@ export default function App() {
               onAddTask={addTask}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
+              onReorderTasks={reorderTasks}
               onAddNote={addNote}
               onUpdateNote={updateNote}
               onDeleteNote={deleteNote}
@@ -877,31 +911,31 @@ export default function App() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden flex items-center justify-around h-[68px] bg-[#0e0e0e] shrink-0 border-t border-[#1a1a1a] px-2 pb-safe relative z-20">
+        <nav className="md:hidden absolute bottom-0 left-0 right-0 flex items-center justify-around h-[68px] shrink-0 border-t border-zinc-200 dark:border-white/5 px-2 pb-safe z-20" style={{ background: isDarkMode ? 'rgba(10,10,11,0.8)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)' }}>
           <button 
             onClick={() => setActiveView('inbox')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'inbox' || activeView === 'today' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'inbox' || activeView === 'today' ? (isDarkMode ? 'bg-white/10 text-zinc-100' : 'bg-zinc-100 text-zinc-900') : 'text-zinc-400 dark:text-[#888]'}`}
           >
             <Layout size={20} strokeWidth={activeView === 'inbox' || activeView === 'today' ? 2.5 : 2} />
             {activeView !== 'inbox' && activeView !== 'today' && <span className="text-[10px] mt-0.5 font-medium">Inbox</span>}
           </button>
           <button 
             onClick={() => setActiveView('upcoming')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'upcoming' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'upcoming' ? (isDarkMode ? 'bg-white/10 text-zinc-100' : 'bg-zinc-100 text-zinc-900') : 'text-zinc-400 dark:text-[#888]'}`}
           >
             <Calendar size={20} strokeWidth={activeView === 'upcoming' ? 2.5 : 2} />
             {activeView !== 'upcoming' && <span className="text-[10px] mt-0.5 font-medium">Upcoming</span>}
           </button>
           <button 
             onClick={() => setActiveView('completed')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'completed' ? 'bg-white text-zinc-900' : 'text-[#888]'}`}
+            className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'completed' ? (isDarkMode ? 'bg-white/10 text-zinc-100' : 'bg-zinc-100 text-zinc-900') : 'text-zinc-400 dark:text-[#888]'}`}
           >
             <CheckCircle2 size={20} strokeWidth={activeView === 'completed' ? 2.5 : 2} />
             {activeView !== 'completed' && <span className="text-[10px] mt-0.5 font-medium">Completed</span>}
           </button>
           <button 
             onClick={() => setIsMobileSidebarOpen(true)}
-            className="flex flex-col items-center justify-center w-14 h-12 rounded-[14px] text-[#888] transition-colors"
+            className="flex flex-col items-center justify-center w-14 h-12 rounded-[14px] text-zinc-400 dark:text-[#888] transition-colors"
           >
             <Menu size={20} strokeWidth={2} />
             <span className="text-[10px] mt-0.5 font-medium">Menu</span>

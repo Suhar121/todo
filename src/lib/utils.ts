@@ -72,3 +72,16 @@ export const getGreeting = (): string => {
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
 };
+
+export const getDurationText = (startStr: string, endStr: string): string => {
+  const start = new Date(startStr).getTime();
+  const end = new Date(endStr).getTime();
+  const diffMs = Math.max(0, end - start);
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) return `Took ${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `Took ${diffHrs} hr${diffHrs !== 1 ? 's' : ''}`;
+  const diffDays = Math.floor(diffHrs / 24);
+  return `Took ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+};

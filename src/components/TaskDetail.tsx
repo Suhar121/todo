@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+statimport React, { useState, useEffect } from 'react';
 import { Task, Project, Priority, Status, Subtask } from '../types';
 import { cn } from '../lib/utils';
 import { generateId } from '../lib/storage';
@@ -32,6 +32,9 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
 
+  const [timeEstimate, setTimeEstimate] = useState(task.timeEstimate?.toString() || '');
+  const [completedAt, setCompletedAt] = useState(task.completedAt || '');
+
   // Re-sync when a different task is selected
   useEffect(() => {
     setTitle(task.title);
@@ -41,6 +44,8 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     setProgress(task.progress ?? (task.status === 'completed' ? 100 : 0));
     setDueDate(task.dueDate?.split('T')[0] || '');
     setReminderTime(task.reminderTime || '');
+    setTimeEstimate(task.timeEstimate?.toString() || '');
+    setCompletedAt(task.completedAt || '');
     setProjectId(task.projectId || '');
     setTags(task.tags || []);
     setSubtasks(task.subtasks || []);
@@ -59,13 +64,15 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         progress,
         dueDate: dueDate || undefined,
         reminderTime: reminderTime || undefined,
+        timeEstimate: timeEstimate ? parseInt(timeEstimate, 10) : undefined,
+        completedAt: completedAt || undefined,
         projectId: projectId || undefined,
         tags,
         subtasks,
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [title, description, priority, status, progress, dueDate, reminderTime, projectId, JSON.stringify(tags), JSON.stringify(subtasks)]);
+  }, [title, description, priority, status, progress, dueDate, reminderTime, timeEstimate, completedAt, projectId, JSON.stringify(tags), JSON.stringify(subtasks)]);
 
   const addSubtask = () => {
     if (!newSubtask.trim()) return;
@@ -164,7 +171,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6 custom-scrollbar">
           {/* Meta grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {/* Status */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1">
@@ -175,9 +182,18 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                 onChange={(e) => {
                   const nextStatus = e.target.value as Status;
                   setStatus(nextStatus);
-                  if (nextStatus === 'completed') setProgress(100);
-                  else if (nextStatus === 'todo') setProgress(0);
-                  else if (progress === 0) setProgress(50);
+                  if (nextStatus === 'completed') {
+                    setProgress(100);
+                    setCompletedAt(new Date().toISOString());
+                  }
+                  else if (nextStatus === 'todo') {
+                    setProgress(0);
+                    setCompletedAt('');
+                  }
+                  else {
+                    if (progress === 0) setProgress(50);
+                    setCompletedAt('');
+                  }
                 }}
                 className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800"
               >
@@ -230,6 +246,21 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
               </div>
             </div>
 
+            {/* Time Estimate */}
+            <div className="space-y-1.5 focus-within-ring">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1">
+                <Clock size={10} /> Time Estimate (mins)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={timeEstimate}
+                onChange={(e) => setTimeEstimate(e.target.value)}
+                placeholder="e.g. 30"
+                className="w-full bg-zinc-50 dark:bg-zinc-800/50 text-sm font-medium outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 border border-zinc-100 dark:border-zinc-800 focus:border-indigo-500/40"
+              />
+            </div>
+
             {/* Project */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1">
@@ -263,9 +294,18 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
               onChange={(e) => {
                 const nextProgress = Number(e.target.value);
                 setProgress(nextProgress);
-                if (nextProgress >= 100) setStatus('completed');
-                else if (nextProgress <= 0) setStatus('todo');
-                else setStatus('in_progress');
+                if (nextProgress >= 100) {
+                  setStatus('completed');
+                  if (!completedAt) setCompletedAt(new Date().toISOString());
+                }
+                else if (nextProgress <= 0) {
+                  setStatus('todo');
+                  setCompletedAt('');
+                }
+                else {
+                  setStatus('in_progress');
+                  setCompletedAt('');
+                }
               }}
               className="w-full accent-emerald-500"
             />
