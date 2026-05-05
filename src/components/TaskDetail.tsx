@@ -1,4 +1,4 @@
-statimport React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task, Project, Priority, Status, Subtask } from '../types';
 import { cn } from '../lib/utils';
 import { generateId } from '../lib/storage';
