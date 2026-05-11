@@ -565,7 +565,7 @@ export default function App() {
   // ===========================
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-white dark:bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 animate-pulse">
             <Layout size={20} />
@@ -581,7 +581,7 @@ export default function App() {
   // ===========================
   if (!user) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6 overflow-y-auto">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -794,7 +794,7 @@ export default function App() {
   // RENDER: MAIN APP
   // ===========================
   return (
-    <div className="flex h-screen bg-zinc-50 dark:bg-[#09090b] overflow-hidden font-sans relative">
+    <div className="flex h-[100dvh] bg-zinc-50 dark:bg-[#09090b] overflow-hidden font-sans relative pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
       {/* Ambient gradient orbs (visible in dark mode) */}
       <div className='absolute inset-0 overflow-hidden pointer-events-none hidden dark:block z-0'>
         <div className='absolute top-0 right-0 w-[700px] h-[700px] bg-gradient-to-br from-violet-600/10 via-transparent to-transparent rounded-full blur-3xl -translate-y-1/3 translate-x-1/3' />
@@ -913,7 +913,7 @@ export default function App() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden absolute bottom-0 left-0 right-0 flex items-center justify-around h-[68px] shrink-0 border-t border-zinc-200 dark:border-white/5 px-2 pb-safe z-20" style={{ background: isDarkMode ? 'rgba(10,10,11,0.8)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)' }}>
+        <nav className="md:hidden absolute bottom-0 left-0 right-0 flex items-center justify-around shrink-0 border-t border-zinc-200 dark:border-white/5 px-2 pb-[env(safe-area-inset-bottom)] z-20" style={{ background: isDarkMode ? 'rgba(10,10,11,0.8)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', height: `calc(68px + env(safe-area-inset-bottom))` }}>
           <button 
             onClick={() => setActiveView('inbox')}
             className={`flex flex-col items-center justify-center w-14 h-12 rounded-[14px] transition-colors ${activeView === 'inbox' || activeView === 'today' ? (isDarkMode ? 'bg-white/10 text-zinc-100' : 'bg-zinc-100 text-zinc-900') : 'text-zinc-400 dark:text-[#888]'}`}
