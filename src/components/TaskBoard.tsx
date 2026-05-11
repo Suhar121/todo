@@ -10,6 +10,7 @@ import { cn, formatRelativeDate, getLocalDateKey, isOverdue, taskDateKey, getDur
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { AddTaskInline } from './AddTaskInline';
 import { TaskDetail } from './TaskDetail';
+import { ConfirmDialog } from './ConfirmDialog';
 interface TaskBoardProps {
   view: string;
   tasks: Task[];
@@ -58,6 +59,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
   const [sortBy, setSortBy] = useState<SortBy>('default');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
   const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) || null : null;
 
@@ -131,7 +133,14 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
     });
   };
 
-  const handleDeleteTask = (id: string) => onDeleteTask(id);
+  const handleDeleteTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    setConfirmAction({
+      title: 'Delete task?',
+      message: task ? `"${task.title}" will be permanently deleted.` : 'This task will be permanently deleted.',
+      onConfirm: () => { onDeleteTask(id); setConfirmAction(null); },
+    });
+  };
 
   const createQuickNote = () => {
     const content = quickNoteInput.trim();
@@ -204,7 +213,14 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
                       <span className="text-[10px] font-medium text-zinc-400">{formatRelativeDate(note.createdAt)}</span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => convertNoteToTask(note)} className="p-1.5 text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors" title="Convert to task"><CheckCircle2 size={14} /></button>
-                      <button onClick={() => onDeleteNote(note.id)} className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors" title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={() => {
+                        const content = note.content.slice(0, 60);
+                        setConfirmAction({
+                          title: 'Delete note?',
+                          message: `"${content}${note.content.length > 60 ? '...' : ''}" will be permanently deleted.`,
+                          onConfirm: () => { onDeleteNote(note.id); setConfirmAction(null); },
+                        });
+                      }} className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors" title="Delete"><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </motion.div>
@@ -344,6 +360,14 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
           <TaskDetail task={selectedTask} onClose={() => setSelectedTaskId(null)} onUpdate={onUpdateTask} onDelete={onDeleteTask} projects={projects} />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        onConfirm={() => confirmAction?.onConfirm()}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 };
@@ -415,9 +439,9 @@ const TaskCardList: React.FC<TaskCardListProps & { isReorderable?: boolean }> = 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-2">
         <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', priority.bgColor, priority.color)}>{priority.label}</span>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors">
+        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
           <Trash2 size={14} />
         </button>
       </div>

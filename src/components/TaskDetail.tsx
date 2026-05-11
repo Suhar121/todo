@@ -285,30 +285,41 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
               <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Task Progress</label>
               <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{progress}%</span>
             </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={progress}
-              onChange={(e) => {
-                const nextProgress = Number(e.target.value);
+            <div
+              className="relative h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full cursor-pointer group"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = Math.round(((e.clientX - rect.left) / rect.width) * 20) * 5;
+                const nextProgress = Math.min(100, Math.max(0, pct));
                 setProgress(nextProgress);
                 if (nextProgress >= 100) {
                   setStatus('completed');
                   if (!completedAt) setCompletedAt(new Date().toISOString());
-                }
-                else if (nextProgress <= 0) {
+                } else if (nextProgress <= 0) {
                   setStatus('todo');
                   setCompletedAt('');
-                }
-                else {
+                } else {
                   setStatus('in_progress');
                   setCompletedAt('');
                 }
               }}
-              className="w-full accent-emerald-500"
-            />
+            >
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                initial={false}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white dark:bg-zinc-100 border-2 border-indigo-500 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ left: `calc(${progress}% - 8px)` }}
+              />
+            </div>
+            <div className="flex justify-between text-[9px] text-zinc-400 font-medium">
+              <span>0%</span>
+              <span>50%</span>
+              <span>100%</span>
+            </div>
           </div>
 
           {/* Description */}

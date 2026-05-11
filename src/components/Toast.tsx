@@ -30,7 +30,7 @@ const colorMap: Record<ToastType, string> = {
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onDismiss }) => {
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-20 md:bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
       <AnimatePresence>
         {toasts.map(toast => (
           <SingleToast key={toast.id} toast={toast} onDismiss={onDismiss} />

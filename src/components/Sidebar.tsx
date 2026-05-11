@@ -3,6 +3,7 @@ import { Inbox, Calendar, CalendarRange, CheckCircle2, Layout, Plus, LogOut, Lig
 import { cn, getLocalDateKey, taskDateKey } from '../lib/utils';
 import { AppUser, Project, Task } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface SidebarProps {
   projects: Project[];
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [contextMenuProjectId, setContextMenuProjectId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Project | null>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
   const editProjectInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,11 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const sidebarContent = (
     <div 
-      className="w-[260px] h-full flex flex-col p-5 border-r border-zinc-200 dark:border-white/5 select-none-deep relative z-10"
-      style={{ 
-        background: 'linear-gradient(180deg, rgba(10,10,11,0.8) 0%, rgba(9,9,11,0.8) 100%)',
-        backdropFilter: 'blur(20px)',
-      }}
+      className="w-[260px] h-full flex flex-col p-5 border-r border-zinc-200 dark:border-white/5 select-none-deep relative z-10 bg-zinc-50 dark:bg-transparent"
     >
       {/* Logo & User */}
       <div className="flex items-center gap-2.5 px-1 mb-8">
@@ -161,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className={cn(activeView === item.id && 'text-violet-400')}>{item.icon}</span>
               <span className="flex-1 text-left font-medium">{item.label}</span>
               {item.count !== undefined && item.count > 0 && (
-                <span className="text-[10px] font-semibold text-zinc-600 bg-white/[0.05] px-1.5 py-0.5 rounded-full tabular-nums">
+                <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-600 bg-zinc-200/70 dark:bg-white/[0.05] px-1.5 py-0.5 rounded-full tabular-nums">
                   {item.count}
                 </span>
               )}
@@ -212,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/10" style={{ backgroundColor: project.color }} />
                     <span className="truncate font-medium flex-1 text-left">{project.name}</span>
                     {projectTaskCount(project.id) > 0 && (
-                      <span className="text-[10px] font-semibold text-zinc-600 tabular-nums">
+                      <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-600 tabular-nums">
                         {projectTaskCount(project.id)}
                       </span>
                     )}
@@ -249,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </button>
                       <button
                         onClick={() => {
-                          onDeleteProject(project.id);
+                          setConfirmDelete(project);
                           setContextMenuProjectId(null);
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
@@ -286,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       else { setIsAddingProject(false); setNewProjectName(''); }
                     }}
                     placeholder="Project name..."
-                    className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-violet-500/50 text-white py-0.5 placeholder:text-zinc-600"
+                    className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-violet-500/50 text-zinc-900 dark:text-white py-0.5 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                   />
                 </div>
               </motion.div>
@@ -296,10 +294,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Logout */}
-      <div className="pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+      <div className="pt-4 border-t border-zinc-200 dark:border-white/[0.06]">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 transition-colors w-full"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors w-full"
         >
           <LogOut size={18} />
           <span>Logout</span>
@@ -331,6 +329,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {sidebarContent}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete project?"
+        message={`"${confirmDelete?.name}" and its association with tasks will be removed. Tasks themselves won't be deleted.`}
+        onConfirm={() => {
+          if (confirmDelete) onDeleteProject(confirmDelete.id);
+          setConfirmDelete(null);
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </>
   );
 };

@@ -20,10 +20,10 @@ interface AllProjectsPageProps {
 type ProjectStatus = 'active' | 'planning' | 'on_hold' | 'completed';
 
 const statusConfig: Record<ProjectStatus, { label: string; color: string; bgColor: string; borderColor: string; dotColor: string }> = {
-  active: { label: 'Active', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20', dotColor: 'bg-emerald-500' },
-  planning: { label: 'Planning', color: 'text-amber-400', bgColor: 'bg-amber-500/10', borderColor: 'border-amber-500/20', dotColor: 'bg-amber-500' },
-  on_hold: { label: 'On Hold', color: 'text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20', dotColor: 'bg-orange-500' },
-  completed: { label: 'Completed', color: 'text-violet-400', bgColor: 'bg-violet-500/10', borderColor: 'border-violet-500/20', dotColor: 'bg-violet-500' },
+  active: { label: 'Active', color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', borderColor: 'border-emerald-200 dark:border-emerald-500/20', dotColor: 'bg-emerald-500' },
+  planning: { label: 'Planning', color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-500/10', borderColor: 'border-amber-200 dark:border-amber-500/20', dotColor: 'bg-amber-500' },
+  on_hold: { label: 'On Hold', color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-200 dark:border-orange-500/20', dotColor: 'bg-orange-500' },
+  completed: { label: 'Completed', color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-50 dark:bg-violet-500/10', borderColor: 'border-violet-200 dark:border-violet-500/20', dotColor: 'bg-violet-500' },
 };
 
 const PROJECT_COLORS = [
@@ -94,17 +94,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
       onClick={() => onOpenDetail(project)}
       className={cn(
         'group relative rounded-2xl p-5 cursor-pointer transition-all duration-300',
-        'bg-white/[0.03] backdrop-blur-xl border',
+        'bg-white dark:bg-white/[0.03] border',
         isSelected 
-          ? 'border-white/20 bg-white/[0.06]' 
-          : 'border-white/[0.06] hover:border-white/[0.12]',
-        isHovered && !isSelected && 'bg-white/[0.05]'
+          ? 'border-zinc-300 dark:border-white/20 bg-zinc-50 dark:bg-white/[0.06]' 
+          : 'border-zinc-200 dark:border-white/[0.06] hover:border-zinc-300 dark:hover:border-white/[0.12]',
+        isHovered && !isSelected && 'bg-zinc-50 dark:bg-white/[0.05]'
       )}
-      style={{
-        background: isHovered || isSelected 
-          ? 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-          : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-      }}
     >
       <div className={cn('absolute top-4 left-4 transition-opacity duration-200', isHovered || isSelected ? 'opacity-100' : 'opacity-0')}>
         <button 
@@ -112,8 +107,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
           className={cn(
             'p-1 rounded-md transition-all duration-200',
             isSelected 
-              ? 'text-violet-400 bg-violet-500/20' 
-              : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              ? 'text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/20' 
+              : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5'
           )}
         >
           {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
@@ -125,7 +120,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
           <div ref={colorPickerRef} className='relative'>
             <button 
               onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }} 
-              className='w-4 h-4 rounded-full ring-2 ring-white/10 shadow-lg hover:scale-110 transition-transform duration-200' 
+              className='w-4 h-4 rounded-full ring-2 ring-zinc-200 dark:ring-white/10 shadow-lg hover:scale-110 transition-transform duration-200' 
               style={{ backgroundColor: project.color }} 
             />
             <AnimatePresence>
@@ -134,7 +129,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
                   initial={{ opacity: 0, scale: 0.9, y: -4 }} 
                   animate={{ opacity: 1, scale: 1, y: 0 }} 
                   exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                  className='absolute left-0 top-full z-50 mt-2 p-2.5 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl'
+                  className='absolute left-0 top-full z-50 mt-2 p-2.5 bg-white dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl'
                 >
                   <div className='grid grid-cols-5 gap-2'>
                     {PROJECT_COLORS.map((color) => (
@@ -143,7 +138,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
                         onClick={(e) => { e.stopPropagation(); onUpdate(project.id, { color }); setShowColorPicker(false); }} 
                         className={cn(
                           'w-6 h-6 rounded-full hover:scale-110 transition-transform duration-200',
-                          project.color === color && 'ring-2 ring-white/40 ring-offset-2 ring-offset-zinc-900'
+                          project.color === color && 'ring-2 ring-zinc-400 dark:ring-white/40 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
                         )} 
                         style={{ backgroundColor: color }} 
                       />
@@ -172,8 +167,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
             className={cn(
               'p-1.5 rounded-lg transition-all duration-200',
               isHovered 
-                ? 'opacity-100 bg-white/5 text-zinc-400 hover:text-zinc-200' 
-                : 'opacity-0 text-zinc-600'
+                ? 'opacity-100 bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200' 
+                : 'opacity-0 text-zinc-400 dark:text-zinc-600'
             )}
           >
             <MoreVertical size={16} />
@@ -184,30 +179,30 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
                 initial={{ opacity: 0, scale: 0.95, y: -4 }} 
                 animate={{ opacity: 1, scale: 1, y: 0 }} 
                 exit={{ opacity: 0, scale: 0.95 }}
-                className='absolute right-0 top-full z-50 mt-1 py-1.5 w-40 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl'
+                className='absolute right-0 top-full z-50 mt-1 py-1.5 w-40 bg-white dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl'
               >
                 <button 
                   onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setShowActions(false); }} 
-                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/5 transition-colors'
+                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors'
                 >
                   <Pencil size={14} /> Rename
                 </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); onOpenDetail(project); setShowActions(false); }} 
-                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/5 transition-colors'
+                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors'
                 >
                   <LayoutGrid size={14} /> View Details
                 </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(project.id); setShowActions(false); }} 
-                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-white/5 transition-colors'
+                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors'
                 >
                   <Copy size={14} /> Copy ID
                 </button>
-                <div className='h-px bg-white/5 my-1' />
+                <div className='h-px bg-zinc-100 dark:bg-white/5 my-1' />
                 <button 
                   onClick={(e) => { e.stopPropagation(); if (confirm('Delete this project?')) onDelete(project.id); setShowActions(false); }} 
-                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors'
+                  className='w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors'
                 >
                   <Trash2 size={14} /> Delete
                 </button>
@@ -229,10 +224,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
               if (e.key === 'Escape') { setIsEditingName(false); setEditName(project.name); } 
             }} 
             onClick={(e) => e.stopPropagation()} 
-            className='w-full bg-transparent outline-none border-b border-violet-500/50 text-white font-semibold text-lg pb-1 placeholder:text-zinc-600' 
+            className='w-full bg-transparent outline-none border-b border-violet-500/50 text-zinc-900 dark:text-white font-semibold text-lg pb-1 placeholder:text-zinc-400 dark:placeholder:text-zinc-600' 
           />
         ) : (
-          <h3 className='text-lg font-semibold text-white/90 tracking-tight'>{project.name}</h3>
+          <h3 className='text-lg font-semibold text-zinc-900 dark:text-white/90 tracking-tight'>{project.name}</h3>
         )}
       </div>
 
@@ -243,7 +238,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
             target='_blank' 
             rel='noopener noreferrer' 
             onClick={(e) => e.stopPropagation()} 
-            className='inline-flex items-center gap-1.5 text-xs text-violet-400/80 hover:text-violet-300 transition-colors group/link'
+            className='inline-flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400/80 hover:text-violet-500 dark:hover:text-violet-300 transition-colors group/link'
           >
             <Link2 size={12} className='shrink-0' />
             <span className='truncate max-w-[200px]'>{project.link.replace(/^https?:\/\//, '')}</span>
@@ -257,7 +252,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
           <span className='text-[11px] font-medium text-zinc-500'>{completedTasks} of {projectTasks.length} tasks</span>
           <span className='text-[11px] font-semibold text-zinc-400'>{progress}%</span>
         </div>
-        <div className='h-1 bg-white/[0.05] rounded-full overflow-hidden'>
+        <div className='h-1 bg-zinc-100 dark:bg-white/[0.05] rounded-full overflow-hidden'>
           <motion.div 
             initial={{ width: 0 }} 
             animate={{ width: progress + '%' }} 
@@ -268,7 +263,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks, isSelected, o
         </div>
       </div>
 
-      <div className='pt-3.5 border-t border-white/[0.06] flex items-center justify-between'>
+      <div className='pt-3.5 border-t border-zinc-100 dark:border-white/[0.06] flex items-center justify-between'>
         <span className='text-[10px] font-medium text-zinc-600'>
           {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
@@ -341,20 +336,15 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
           animate={{ opacity: 1, scale: 1, y: 0 }} 
           exit={{ opacity: 0, scale: 0.95, y: 20 }} 
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} 
-          className='relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl'
-          style={{
-            background: 'linear-gradient(135deg, rgba(30,30,35,0.98) 0%, rgba(20,20,25,0.98) 100%)',
-            backdropFilter: 'blur(40px)',
-          }}
+          className='relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'
         >
-          <div className='sticky top-0 z-10 border-b border-white/[0.08] p-5 flex items-center justify-between'
-            style={{ background: 'rgba(15,15,20,0.9)', backdropFilter: 'blur(20px)' }}
+          <div className='sticky top-0 z-10 border-b border-zinc-200 dark:border-white/[0.08] p-5 flex items-center justify-between bg-zinc-50/80 dark:bg-zinc-900/90 backdrop-blur-md'
           >
             <div className='flex items-center gap-3'>
               <div ref={colorPickerRef} className='relative'>
                 <button 
                   onClick={() => setShowColorPicker(!showColorPicker)} 
-                  className='w-6 h-6 rounded-full ring-2 ring-white/10 shadow-lg hover:scale-110 transition-transform' 
+                  className='w-6 h-6 rounded-full ring-2 ring-zinc-200 dark:ring-white/10 shadow-lg hover:scale-110 transition-transform' 
                   style={{ backgroundColor: project.color }} 
                 />
                 <AnimatePresence>
@@ -363,7 +353,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                       initial={{ opacity: 0, scale: 0.9 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       exit={{ opacity: 0, scale: 0.9 }} 
-                      className='absolute left-0 top-full z-50 mt-2 p-2.5 bg-zinc-900/95 border border-white/10 rounded-xl shadow-2xl'
+                      className='absolute left-0 top-full z-50 mt-2 p-2.5 bg-white dark:bg-zinc-900/95 border border-zinc-200 dark:border-white/10 rounded-xl shadow-2xl'
                     >
                       <div className='grid grid-cols-5 gap-2'>
                         {PROJECT_COLORS.map((color) => (
@@ -372,7 +362,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                             onClick={() => { onUpdate(project.id, { color }); setShowColorPicker(false); }} 
                             className={cn(
                               'w-6 h-6 rounded-full hover:scale-110 transition-transform',
-                              project.color === color && 'ring-2 ring-white/40 ring-offset-2 ring-offset-zinc-900'
+                          project.color === color && 'ring-2 ring-zinc-400 dark:ring-white/40 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
                             )} 
                             style={{ backgroundColor: color }} 
                           />
@@ -383,22 +373,22 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                 </AnimatePresence>
               </div>
               {isEditing ? (
-                <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)} className='text-xl font-semibold text-white bg-transparent outline-none border-b-2 border-violet-500/50' />
+                <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)} className='text-xl font-semibold text-zinc-900 dark:text-white bg-transparent outline-none border-b-2 border-violet-500/50' />
               ) : (
-                <h2 className='text-xl font-semibold text-white'>{project.name}</h2>
+                <h2 className='text-xl font-semibold text-zinc-900 dark:text-white'>{project.name}</h2>
               )}
             </div>
-            <button onClick={onClose} className='p-2 hover:bg-white/5 rounded-lg transition-colors text-zinc-400 hover:text-white'><X size={20} /></button>
+            <button onClick={onClose} className='p-2 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors text-zinc-400 hover:text-zinc-700 dark:hover:text-white'><X size={20} /></button>
           </div>
 
-          <div className='flex border-b border-white/[0.08]'>
+          <div className='flex border-b border-zinc-200 dark:border-white/[0.08]'>
             <button 
               onClick={() => setActiveTab('details')} 
               className={cn(
                 'flex-1 px-5 py-3.5 text-sm font-medium transition-colors',
                 activeTab === 'details' 
-                  ? 'text-white border-b-2 border-violet-500' 
-                  : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'text-zinc-900 dark:text-white border-b-2 border-violet-500' 
+                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               )}
             >
               Details
@@ -408,8 +398,8 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
               className={cn(
                 'flex-1 px-5 py-3.5 text-sm font-medium transition-colors',
                 activeTab === 'tasks' 
-                  ? 'text-white border-b-2 border-violet-500' 
-                  : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'text-zinc-900 dark:text-white border-b-2 border-violet-500' 
+                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               )}
             >
               Tasks ({projectTasks.length})
@@ -425,7 +415,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                     <select 
                       value={editStatus} 
                       onChange={(e) => setEditStatus(e.target.value as ProjectStatus)} 
-                      className='w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-zinc-300 outline-none focus:border-violet-500/50'
+                      className='w-full px-3 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 outline-none focus:border-violet-500/50'
                     >
                       {(Object.keys(statusConfig) as ProjectStatus[]).map((s) => (<option key={s} value={s}>{statusConfig[s].label}</option>))}
                     </select>
@@ -452,15 +442,15 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                       value={editLink} 
                       onChange={(e) => setEditLink(e.target.value)} 
                       placeholder='https://github.com/...' 
-                      className='w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-zinc-300 outline-none focus:border-violet-500/50 placeholder:text-zinc-600' 
+                      className='w-full px-3 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 outline-none focus:border-violet-500/50 placeholder:text-zinc-400 dark:placeholder:text-zinc-600' 
                     />
                   ) : (
                     project.link ? (
-                      <a href={project.link} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors'>
+                      <a href={project.link} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 transition-colors'>
                         <Link2 size={14} /> {project.link}
                       </a>
                     ) : (
-                      <button onClick={() => setIsEditing(true)} className='text-sm text-zinc-500 hover:text-zinc-300 transition-colors'>Add project link</button>
+                      <button onClick={() => setIsEditing(true)} className='text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors'>Add project link</button>
                     )
                   )}
                 </div>
@@ -468,7 +458,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                 <div>
                   <label className='block text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5'>Progress</label>
                   <div className='flex items-center gap-4'>
-                    <div className='flex-1 h-2.5 bg-white/[0.05] rounded-full overflow-hidden'>
+                    <div className='flex-1 h-2.5 bg-zinc-100 dark:bg-white/[0.05] rounded-full overflow-hidden'>
                       <motion.div initial={{ width: 0 }} animate={{ width: progress + '%' }} className='h-full rounded-full' style={{ backgroundColor: project.color }} />
                     </div>
                     <span className='text-sm font-semibold text-zinc-400'>{progress}%</span>
@@ -479,7 +469,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                 <div className='grid grid-cols-2 gap-5'>
                   <div>
                     <label className='block text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-2'>Created</label>
-                    <p className='text-sm text-zinc-300'>{new Date(project.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                    <p className='text-sm text-zinc-700 dark:text-zinc-300'>{new Date(project.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                   </div>
                   <div>
                     <label className='block text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-2'>Project ID</label>
@@ -487,16 +477,16 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                   </div>
                 </div>
 
-                <div className='flex items-center gap-3 pt-5 border-t border-white/[0.08]'>
+                <div className='flex items-center gap-3 pt-5 border-t border-zinc-200 dark:border-white/[0.08]'>
                   {isEditing ? (
                     <>
                       <button onClick={handleSave} className='px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-500 transition-colors'>Save Changes</button>
-                      <button onClick={() => { setIsEditing(false); setEditName(project.name); setEditLink(project.link || ''); setEditStatus(project.status as ProjectStatus || 'active'); }} className='px-4 py-2 bg-white/5 border border-white/10 text-zinc-300 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors'>Cancel</button>
+                      <button onClick={() => { setIsEditing(false); setEditName(project.name); setEditLink(project.link || ''); setEditStatus(project.status as ProjectStatus || 'active'); }} className='px-4 py-2 bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors'>Cancel</button>
                     </>
                   ) : (
-                    <button onClick={() => setIsEditing(true)} className='px-4 py-2 bg-white/5 border border-white/10 text-zinc-300 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors'>Edit Project</button>
+                    <button onClick={() => setIsEditing(true)} className='px-4 py-2 bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors'>Edit Project</button>
                   )}
-                  <button onClick={() => { if (confirm('Delete this project?')) { onDelete(project.id); onClose(); } }} className='px-4 py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-sm font-medium transition-colors ml-auto'>Delete Project</button>
+                  <button onClick={() => { if (confirm('Delete this project?')) { onDelete(project.id); onClose(); } }} className='px-4 py-2 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg text-sm font-medium transition-colors ml-auto'>Delete Project</button>
                 </div>
               </div>
             ) : (
@@ -512,16 +502,16 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                         <h4 className='text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3'>Pending ({pendingTasks.length})</h4>
                         <div className='space-y-2'>
                           {pendingTasks.map((task) => (
-                            <div key={task.id} className='flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]'>
+                            <div key={task.id} className='flex items-center gap-3 p-3 bg-zinc-50 dark:bg-white/[0.03] rounded-xl border border-zinc-200 dark:border-white/[0.05]'>
                               <div className='w-2 h-2 rounded-full' style={{ backgroundColor: project.color }} />
-                              <span className='text-sm text-zinc-300 flex-1'>{task.title}</span>
+                              <span className='text-sm text-zinc-700 dark:text-zinc-300 flex-1'>{task.title}</span>
                               <span className={cn(
                                 'text-[10px] font-medium px-2 py-0.5 rounded-full',
                                 task.priority === 'high' 
-                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
+                                  ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20' 
                                   : task.priority === 'medium' 
-                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
-                                    : 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
+                                    ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20' 
+                                    : 'bg-zinc-100 dark:bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-500/20'
                               )}>
                                 {task.priority}
                               </span>
@@ -535,7 +525,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, tasks,
                         <h4 className='text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3'>Completed ({completedTasksList.length})</h4>
                         <div className='space-y-2'>
                           {completedTasksList.map((task) => (
-                            <div key={task.id} className='flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.03] opacity-60'>
+                            <div key={task.id} className='flex items-center gap-3 p-3 bg-zinc-50/50 dark:bg-white/[0.02] rounded-xl border border-zinc-100 dark:border-white/[0.03] opacity-60'>
                               <CheckCircle2 size={14} className='text-emerald-500' />
                               <span className='text-sm text-zinc-500 line-through flex-1'>{task.title}</span>
                             </div>
@@ -633,12 +623,12 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
           <div className='flex items-start justify-between mb-10'>
             <div>
               <div className='flex items-center gap-2.5 mb-4'>
-                <div className='w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center'>
+                <div className='w-9 h-9 rounded-xl bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 flex items-center justify-center'>
                   <FolderOpen size={18} className='text-zinc-400' strokeWidth={1.5} />
                 </div>
                 <span className='text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500'>Workspace</span>
               </div>
-              <h1 className='text-4xl font-semibold tracking-tight text-white/90 mb-1.5'>Projects</h1>
+              <h1 className='text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white/90 mb-1.5'>Projects</h1>
               <p className='text-sm text-zinc-500'>Manage and track all your projects in one place</p>
             </div>
             <button 
@@ -656,33 +646,33 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
 
           {/* Stats Row */}
           <div className='grid grid-cols-2 md:grid-cols-4 gap-3 mb-8'>
-            <div className='group p-4 rounded-2xl border border-white/[0.06] transition-all duration-300 hover:border-white/[0.1] hover:bg-white/[0.02]' style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)' }}>
+            <div className='group p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.06] transition-all duration-300 hover:border-zinc-300 dark:hover:border-white/[0.1]'>
               <div className='flex items-center justify-between mb-3'>
                 <span className='text-[11px] font-semibold uppercase tracking-wider text-zinc-500'>Tasks</span>
                 <Target size={14} className='text-violet-500/60' />
               </div>
-              <p className='text-3xl font-semibold tracking-tight text-white/90'>{stats.tasks}</p>
+              <p className='text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white/90'>{stats.tasks}</p>
             </div>
-            <div className='group p-4 rounded-2xl border border-white/[0.06] transition-all duration-300 hover:border-white/[0.1] hover:bg-white/[0.02]' style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)' }}>
+            <div className='group p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.06] transition-all duration-300 hover:border-zinc-300 dark:hover:border-white/[0.1]'>
               <div className='flex items-center justify-between mb-3'>
                 <span className='text-[11px] font-semibold uppercase tracking-wider text-zinc-500'>Active</span>
                 <Zap size={14} className='text-emerald-500/60' />
               </div>
-              <p className='text-3xl font-semibold tracking-tight text-white/90'>{stats.active}</p>
+              <p className='text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white/90'>{stats.active}</p>
             </div>
-            <div className='group p-4 rounded-2xl border border-white/[0.06] transition-all duration-300 hover:border-white/[0.1] hover:bg-white/[0.02]' style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)' }}>
+            <div className='group p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.06] transition-all duration-300 hover:border-zinc-300 dark:hover:border-white/[0.1]'>
               <div className='flex items-center justify-between mb-3'>
                 <span className='text-[11px] font-semibold uppercase tracking-wider text-zinc-500'>Completed</span>
                 <Check size={14} className='text-violet-500/60' />
               </div>
-              <p className='text-3xl font-semibold tracking-tight text-white/90'>{stats.completedTasks}</p>
+              <p className='text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white/90'>{stats.completedTasks}</p>
             </div>
-            <div className='group p-4 rounded-2xl border border-white/[0.06] transition-all duration-300 hover:border-white/[0.1] hover:bg-white/[0.02]' style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)' }}>
+            <div className='group p-4 rounded-2xl bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.06] transition-all duration-300 hover:border-zinc-300 dark:hover:border-white/[0.1]'>
               <div className='flex items-center justify-between mb-3'>
                 <span className='text-[11px] font-semibold uppercase tracking-wider text-zinc-500'>Productivity</span>
                 <TrendingUp size={14} className='text-amber-500/60' />
               </div>
-              <p className='text-3xl font-semibold tracking-tight text-white/90'>
+              <p className='text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white/90'>
                 {stats.tasks + stats.completedTasks > 0 ? Math.round((stats.completedTasks / (stats.tasks + stats.completedTasks)) * 100) : 0}%
               </p>
             </div>
@@ -697,22 +687,14 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)} 
                 placeholder='Search projects...' 
-                className='w-full pl-11 pr-4 py-3 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 transition-all duration-200 outline-none'
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
+                className='w-full pl-11 pr-4 py-3 rounded-xl text-sm bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-zinc-900 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all duration-200 outline-none focus:ring-2 focus:ring-indigo-500/40'
               />
             </div>
             <div className='flex items-center gap-2'>
               <div className='relative'>
                 <button 
                   onClick={() => setShowSortMenu(!showSortMenu)} 
-                  className='flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 transition-all duration-200 hover:text-zinc-200'
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}
+                  className='flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-zinc-600 dark:text-zinc-400 transition-all duration-200 hover:text-zinc-900 dark:hover:text-zinc-200'
                 >
                   <ArrowUpDown size={16} /> {sortLabel} <ChevronDown size={14} />
                 </button>
@@ -721,13 +703,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                     <motion.div 
                       initial={{ opacity: 0, y: -4 }} 
                       animate={{ opacity: 1, y: 0 }} 
-                      className='absolute right-0 top-full z-50 mt-2 py-1.5 w-44 rounded-xl overflow-hidden'
-                      style={{
-                        background: 'rgba(20,20,25,0.98)',
-                        backdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                      }}
+                      className='absolute right-0 top-full z-50 mt-2 py-1.5 w-44 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] shadow-xl'
                     >
                       {SORT_OPTIONS.map((opt) => (
                         <button 
@@ -737,7 +713,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                             'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition-colors',
                             sortBy === opt.value 
                               ? 'text-violet-400 bg-violet-500/10' 
-                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-white/5'
                           )}
                         >
                           <opt.icon size={14} /> {opt.label}
@@ -748,19 +724,15 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                 </AnimatePresence>
               </div>
               <div 
-                className='flex items-center gap-1 p-1 rounded-xl'
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
+                className='flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06]'
               >
                 <button 
                   onClick={() => setViewMode('grid')} 
                   className={cn(
                     'p-2 rounded-lg transition-all duration-200',
                     viewMode === 'grid' 
-                      ? 'bg-white/10 text-white' 
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-zinc-900 dark:bg-white/10 text-white' 
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                   )}
                 >
                   <Grid3X3 size={16} />
@@ -770,8 +742,8 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                   className={cn(
                     'p-2 rounded-lg transition-all duration-200',
                     viewMode === 'list' 
-                      ? 'bg-white/10 text-white' 
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-zinc-900 dark:bg-white/10 text-white' 
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                   )}
                 >
                   <List size={16} />
@@ -788,15 +760,11 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
               initial={{ opacity: 0, y: -10 }} 
               animate={{ opacity: 1, y: 0 }} 
               exit={{ opacity: 0, y: -10 }} 
-              className='mb-6 p-4 rounded-xl flex items-center justify-between'
-              style={{
-                background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(99,102,241,0.1) 100%)',
-                border: '1px solid rgba(139,92,246,0.2)',
-              }}
+              className='mb-6 p-4 rounded-xl flex items-center justify-between bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20'
             >
               <div className='flex items-center gap-3'>
-                <span className='text-sm font-medium text-violet-300'>{selectedProjects.size} selected</span>
-                <button onClick={handleSelectAll} className='text-xs text-zinc-400 hover:text-white transition-colors'>
+                <span className='text-sm font-medium text-violet-700 dark:text-violet-300'>{selectedProjects.size} selected</span>
+                <button onClick={handleSelectAll} className='text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors'>
                   {selectedProjects.size === filteredProjects.length ? 'Deselect all' : 'Select all'}
                 </button>
               </div>
@@ -817,12 +785,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
               initial={{ opacity: 0, y: -10, scale: 0.98 }} 
               animate={{ opacity: 1, y: 0, scale: 1 }} 
               exit={{ opacity: 0, y: -10, scale: 0.98 }} 
-              className='mb-8 p-5 rounded-2xl'
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-              }}
+              className='mb-8 p-5 rounded-2xl bg-white dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] shadow-lg'
             >
               <div className='flex items-center gap-4'>
                 <div className='w-5 h-5 rounded-full' style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }} />
@@ -835,7 +798,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                     if (e.key === 'Escape') { setIsAdding(false); setNewProjectName(''); } 
                   }} 
                   placeholder='Project name...' 
-                  className='flex-1 bg-transparent outline-none text-white font-medium text-lg placeholder:text-zinc-600' 
+                  className='flex-1 bg-transparent outline-none text-zinc-900 dark:text-white font-medium text-lg placeholder:text-zinc-400 dark:placeholder:text-zinc-600' 
                 />
                 <button 
                   onClick={handleSubmitNew} 
@@ -846,7 +809,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
                 </button>
                 <button 
                   onClick={() => { setIsAdding(false); setNewProjectName(''); }} 
-                  className='p-2 text-zinc-500 hover:text-zinc-300 transition-colors'
+                  className='p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors'
                 >
                   <X size={18} />
                 </button>
@@ -859,12 +822,11 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
         {filteredProjects.length === 0 && !isAdding ? (
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className='text-center py-24'>
             <div 
-              className='w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center'
-              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.06)' }}
+              className='w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06]'
             >
               <FolderOpen size={32} className='text-zinc-600' />
             </div>
-            <h3 className='text-xl font-medium text-white/80 mb-2'>No projects found</h3>
+            <h3 className='text-xl font-medium text-zinc-800 dark:text-white/80 mb-2'>No projects found</h3>
             <p className='text-sm text-zinc-500 mb-8 max-w-sm mx-auto'>
               {searchQuery || statusFilter !== 'all' 
                 ? 'Try adjusting your search or filter criteria.' 
@@ -873,8 +835,7 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ projects, task
             {searchQuery || statusFilter !== 'all' ? (
               <button 
                 onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} 
-                className='inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 transition-all'
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                className='inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 transition-all hover:bg-zinc-200 dark:hover:bg-white/10'
               >
                 Clear Filters
               </button>

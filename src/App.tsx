@@ -23,9 +23,9 @@ import { AllProjectsPage } from './components/AllProjectsPage';
 import { UniversalInput } from './components/UniversalInput';
 import { ToastContainer, ToastItem, ToastType } from './components/Toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogIn, UserPlus, User as UserIcon, Sun, Moon, Menu, Layout, Eye, EyeOff, Briefcase, Search, Calendar, Folder, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
+import { LogIn, UserPlus, User as UserIcon, Sun, Moon, Menu, Layout, Eye, EyeOff, Briefcase, Search, Calendar, Folder, Settings as SettingsIcon, CheckCircle2, Lightbulb } from 'lucide-react';
 import { SettingsPanel } from './components/SettingsPanel';
-import { getGreeting } from './lib/utils';
+import { getGreeting, cn } from './lib/utils';
 import { useTelegramReminders } from './lib/useTelegramReminders';
 
 const WORK_TYPES = [
@@ -66,6 +66,8 @@ export default function App() {
   const [activeView, setActiveView] = useState('inbox');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // ===========================
@@ -841,7 +843,7 @@ export default function App() {
                 onAddNote={addNote}
               />
             </div>
-            <button className="md:hidden text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors">
+            <button onClick={() => setIsMobileSearchOpen(true)} className="md:hidden text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors">
               <Search size={22} />
             </button>
             <button
@@ -942,6 +944,99 @@ export default function App() {
           </button>
         </nav>
       </main>
+
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {isMobileSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-white dark:bg-zinc-950 flex flex-col"
+          >
+            <div className="flex items-center gap-3 px-4 h-16 border-b border-zinc-200 dark:border-zinc-800">
+              <Search size={20} className="text-zinc-400 shrink-0" />
+              <input
+                autoFocus
+                type="text"
+                value={mobileSearchQuery}
+                onChange={(e) => setMobileSearchQuery(e.target.value)}
+                placeholder="Search tasks, notes, projects..."
+                className="flex-1 bg-transparent outline-none text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
+              />
+              <button
+                onClick={() => { setIsMobileSearchOpen(false); setMobileSearchQuery(''); }}
+                className="text-sm font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 shrink-0"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {mobileSearchQuery.trim() ? (
+                <>
+                  {tasks
+                    .filter(t =>
+                      t.title.toLowerCase().includes(mobileSearchQuery.toLowerCase()) ||
+                      t.description?.toLowerCase().includes(mobileSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 20)
+                    .map(task => (
+                      <button
+                        key={task.id}
+                        onClick={() => {
+                          setActiveView(task.projectId ? `project-${task.projectId}` : 'inbox');
+                          setIsMobileSearchOpen(false);
+                          setMobileSearchQuery('');
+                        }}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-left hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
+                      >
+                        <div className={cn(
+                          'w-2 h-2 rounded-full shrink-0',
+                          task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-zinc-400'
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{task.title}</p>
+                          {task.description && <p className="text-xs text-zinc-500 truncate mt-0.5">{task.description}</p>}
+                        </div>
+                        {task.status === 'completed' && <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />}
+                      </button>
+                    ))
+                  }
+                  {notes
+                    .filter(n => n.content.toLowerCase().includes(mobileSearchQuery.toLowerCase()))
+                    .slice(0, 10)
+                    .map(note => (
+                      <button
+                        key={note.id}
+                        onClick={() => {
+                          setActiveView('notes');
+                          setIsMobileSearchOpen(false);
+                          setMobileSearchQuery('');
+                        }}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-left hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
+                      >
+                        <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                        <p className="text-sm text-zinc-700 dark:text-zinc-300 truncate flex-1">{note.content}</p>
+                      </button>
+                    ))
+                  }
+                  {tasks.filter(t => t.title.toLowerCase().includes(mobileSearchQuery.toLowerCase())).length === 0 &&
+                   notes.filter(n => n.content.toLowerCase().includes(mobileSearchQuery.toLowerCase())).length === 0 && (
+                    <div className="text-center py-12">
+                      <p className="text-sm text-zinc-500">No results found</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Search size={32} className="text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
+                  <p className="text-sm text-zinc-500">Search your tasks, notes, and projects</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Toast notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

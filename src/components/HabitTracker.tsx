@@ -13,6 +13,7 @@ import {
   Trash2,
   Sparkles,
 } from 'lucide-react';
+import { ConfirmDialog } from './ConfirmDialog';
 
 // ============================================
 // HELPERS
@@ -413,6 +414,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleDay, onDelete }) =
   const isCompletedToday = habit.completedDates.includes(today);
   const streak = getStreak(habit.completedDates);
   const bestStreak = getBestStreak(habit.completedDates);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Last 35 days for the timeline
   const timelineDays = useMemo(() => {
@@ -508,11 +510,19 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleDay, onDelete }) =
 
         {/* Delete */}
         <button
-          onClick={() => onDelete(habit.id)}
+          onClick={() => setConfirmDelete(true)}
           className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 text-zinc-300 dark:text-zinc-600 hover:text-rose-500 dark:hover:text-rose-400 transition-all rounded"
         >
           <Trash2 size={12} />
         </button>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete habit?"
+          message={`"${habit.name}" and all its streak data will be permanently deleted.`}
+          onConfirm={() => { onDelete(habit.id); setConfirmDelete(false); }}
+          onCancel={() => setConfirmDelete(false)}
+        />
       </div>
 
       {/* Timeline streak bar */}
